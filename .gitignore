@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+
+# macOS / iOS / Xcode
+.DS_Store
+*.xcworkspace
+*.xcodeproj
+xcuserdata/
+DerivedData/
+*.ipa
+*.app
+*.dSYM
+
+# Environment & Temp
+.env
+temp/
+scratch/
