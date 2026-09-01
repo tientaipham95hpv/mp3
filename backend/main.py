@@ -56,18 +56,14 @@ def get_video_info(url: str = Query(..., description="YouTube Video URL")):
     
     clean_url = clean_youtube_url(url)
     
-    cookie_path = os.path.join(os.path.dirname(__file__), "cookies.txt")
-    has_cookies = os.path.exists(cookie_path)
-    
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
         'skip_download': True,
         'cachedir': False,
         'nocheckcertificate': True,
+        'extractor_args': {'youtube': {'player_client': ['android_vr', 'android']}},
     }
-    if has_cookies:
-        ydl_opts['cookiefile'] = cookie_path
     
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -121,18 +117,14 @@ def download_media(
     clean_url = clean_youtube_url(url)
     target_format = 'ba/b' if media_type == "mp3" else 'b/ba'
 
-    cookie_path = os.path.join(os.path.dirname(__file__), "cookies.txt")
-    has_cookies = os.path.exists(cookie_path)
-
     ydl_opts = {
         'format': target_format,
         'quiet': True,
         'skip_download': True,
         'cachedir': False,
         'nocheckcertificate': True,
+        'extractor_args': {'youtube': {'player_client': ['android_vr', 'android']}},
     }
-    if has_cookies:
-        ydl_opts['cookiefile'] = cookie_path
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
