@@ -72,12 +72,19 @@ public class DownloadManager: NSObject, ObservableObject, URLSessionDownloadDele
     }
     
     public func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+        if let httpResponse = downloadTask.response as? HTTPURLResponse, httpResponse.statusCode >= 400 {
+            DispatchQueue.main.async {
+                self.state = .failed("Lỗi HTTP \(httpResponse.statusCode) từ server")
+            }
+            return
+        }
+        
         guard let info = currentInfo else {
             DispatchQueue.main.async { self.state = .failed("Thiếu thông tin bài hát") }
             return
         }
         
-        let ext = currentMediaType == .audio ? "mp3" : "mp4"
+        let ext = currentMediaType == .audio ? "m4a" : "mp4"
         let sanitizedTitle = info.title.components(separatedBy: CharacterSet.alphanumerics.inverted).joined(separator: "_")
         let filename = "\(sanitizedTitle)_\(info.id).\(ext)"
         

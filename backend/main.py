@@ -65,6 +65,8 @@ def get_video_info(url: str = Query(..., description="YouTube Video URL")):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error extracting video info: {str(e)}")
 
+from fastapi.responses import FileResponse, StreamingResponse, RedirectResponse
+
 @app.get("/api/download")
 def download_media(
     url: str = Query(..., description="YouTube Video URL"),
@@ -72,21 +74,17 @@ def download_media(
     quality: str = Query("720p", description="Video quality if mp4: 360p, 720p, 1080p")
 ):
     """
-    Downloads and extracts YouTube video/audio using yt-dlp into a temporary file
-    and streams it back to the client as MP3 or MP4 download.
+    Extracts direct YouTube media stream URL and redirects client (HTTP 302).
+    Allows iOS URLSession to download directly from YouTube CDN with zero serverless timeout.
     """
     if not url:
         raise HTTPException(status_code=400, detail="URL is required")
 
-    temp_dir = tempfile.mkdtemp()
-    out_template = os.path.join(temp_dir, "%(title)s.%(ext)s")
-
     if media_type == "mp3":
         ydl_opts = {
             'format': 'bestaudio[ext=m4a]/bestaudio/best',
-            'outtmpl': out_template,
             'quiet': True,
-            'no_warnings': True,
+            'skip_download': True,
             'cachedir': False,
             'nocheckcertificate': True,
             'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
@@ -94,9 +92,8 @@ def download_media(
     else:  # mp4
         ydl_opts = {
             'format': 'best[ext=mp4]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best',
-            'outtmpl': out_template,
             'quiet': True,
-            'no_warnings': True,
+            'skip_download': True,
             'cachedir': False,
             'nocheckcertificate': True,
             'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
@@ -104,44 +101,20 @@ def download_media(
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            title = info.get('title', 'downloaded_media')
+            info = ydl.extract_info(url, download=False)
             
-            # Find the generated file in temp_dir
-            downloaded_files = os.listdir(temp_dir)
-            if not downloaded_files:
-                raise Exception("File extraction failed, no output file generated")
-            
-            file_path = os.path.join(temp_dir, downloaded_files[0])
-            ext = os.path.splitext(file_path)[1]
-            
-            content_type = "audio/mpeg" if media_type == "mp3" or ext == ".mp3" else "video/mp4"
-            filename = f"{title}{ext}"
-            safe_filename = urllib.parse.quote(filename)
+            direct_url = info.get('url')
+            if not direct_url and 'requested_formats' in info and len(info['requested_formats']) > 0:
+                direct_url = info['requested_formats'][0].get('url')
 
-            # Cleanup helper when file is served
-            def file_iterator():
-                with open(file_path, "rb") as f:
-                    while chunk := f.read(64 * 1024):
-                        yield chunk
-                # Delete temp file and dir after streaming finishes
-                try:
-                    os.remove(file_path)
-                    os.rmdir(temp_dir)
-                except Exception:
-                    pass
+            if not direct_url:
+                raise HTTPException(status_code=500, detail="Could not extract direct stream URL")
 
-            return StreamingResponse(
-                file_iterator(),
-                media_type=content_type,
-                headers={
-                    "Content-Disposition": f"attachment; filename*=UTF-8''{safe_filename}",
-                    "Content-Type": content_type
-                }
-            )
+            return RedirectResponse(url=direct_url, status_code=302)
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Download extraction error: {str(e)}")
+
 
 if __name__ == "__main__":
     import uvicorn
