@@ -46,9 +46,9 @@ def clean_youtube_url(url: str) -> str:
             return f"https://www.youtube.com/watch?v={video_id}"
     return url
 
-def extract_best_media_url(info, media_type: str) -> str:
+def extract_best_media_url(info) -> str:
     """
-    Extracts valid direct audio/video stream URL while filtering out storyboard JPG/WEBP images.
+    Extracts valid direct media stream URL while filtering out storyboard JPG/WEBP images.
     """
     direct_url = info.get('url')
     if direct_url and not direct_url.endswith('.jpg') and not direct_url.endswith('.webp'):
@@ -64,17 +64,11 @@ def extract_best_media_url(info, media_type: str) -> str:
     valid_formats = [
         f for f in formats 
         if f.get('url') and 
-        f.get('acodec') != 'none' and 
         f.get('ext') in ['m4a', 'mp4', 'webm', 'opus', 'aac', '3gp'] and
         not f.get('url', '').endswith('.jpg') and
         not f.get('url', '').endswith('.webp')
     ]
     
-    if media_type == "mp3":
-        audio_only = [f for f in valid_formats if f.get('vcodec') == 'none']
-        if audio_only:
-            return audio_only[-1].get('url')
-            
     if valid_formats:
         return valid_formats[-1].get('url')
         
@@ -169,7 +163,7 @@ def download_media(
         raise HTTPException(status_code=400, detail="URL is required")
 
     clean_url = clean_youtube_url(url)
-    target_format = 'ba/b/best' if media_type == "mp3" else 'b/ba/best'
+    target_format = 'b/ba/best'
 
     ydl_opts = {
         'format': target_format,
@@ -186,7 +180,7 @@ def download_media(
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(clean_url, download=False)
             
-            direct_url = extract_best_media_url(info, media_type)
+            direct_url = extract_best_media_url(info)
 
             if not direct_url:
                 raise HTTPException(status_code=500, detail="Could not extract direct stream URL")
@@ -250,7 +244,7 @@ try:
                 vid_match = re.search(r'v=([0-9A-Za-z_-]{11})', clean_url)
                 return jsonify({
                     "id": vid_match.group(1) if vid_match else "unknown",
-                    "title": data.get('title', 'YouTube Video'),
+                    "title": data.get('title', 'YouTube Artist'),
                     "artist": data.get('author_name', 'YouTube Artist'),
                     "duration": 0.0,
                     "thumbnail": data.get('thumbnail_url'),
@@ -266,7 +260,7 @@ try:
         if not url:
             return jsonify({"detail": "URL is required"}), 400
         clean_url = clean_youtube_url(url)
-        target_format = 'ba/b/best' if media_type == "mp3" else 'b/ba/best'
+        target_format = 'b/ba/best'
         ydl_opts = {
             'format': target_format, 'quiet': True, 'skip_download': True, 'cachedir': False, 'nocheckcertificate': True,
             'extractor_args': {'youtube': {'player_client': ['android']}}
@@ -276,7 +270,7 @@ try:
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(clean_url, download=False)
-                direct_url = extract_best_media_url(info, media_type)
+                direct_url = extract_best_media_url(info)
                 if not direct_url:
                     return jsonify({"detail": "Could not extract direct stream URL"}), 500
                 return flask_redirect(direct_url, code=302)
