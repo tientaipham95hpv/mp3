@@ -12,8 +12,8 @@ public struct YouTubeVideoInfo: Codable {
 public class APIClient: ObservableObject {
     public static let shared = APIClient()
     
-    // Default production backend on Vercel
-    @Published public var baseURL: String = "https://mp3-two-swart.vercel.app"
+    // Default production backend on Render.com
+    @Published public var baseURL: String = "https://mp3-3rd1.onrender.com"
     
     public init() {}
     
