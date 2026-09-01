@@ -118,21 +118,19 @@ def download_media(
 
     if media_type == "mp3":
         ydl_opts = {
-            'format': 'bestaudio[ext=m4a]/bestaudio/best',
+            'format': 'ba/b',
             'quiet': True,
             'skip_download': True,
             'cachedir': False,
             'nocheckcertificate': True,
-            'extractor_args': {'youtube': {'player_client': ['android_vr', 'android']}},
         }
     else:  # mp4
         ydl_opts = {
-            'format': 'best[ext=mp4]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best',
+            'format': 'b/ba',
             'quiet': True,
             'skip_download': True,
             'cachedir': False,
             'nocheckcertificate': True,
-            'extractor_args': {'youtube': {'player_client': ['android_vr', 'android']}},
         }
 
     try:
