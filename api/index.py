@@ -6,4 +6,4 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 from main import app
 
-# Vercel Serverless Function Entrypoint v1.2.1 - Android client HTTP 200 OK CDN stream fix
+# Vercel Serverless Function Entrypoint v1.2.2 - Storyboard JPG image filter for 100% MP3 audio downloads

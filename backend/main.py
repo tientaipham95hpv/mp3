@@ -46,6 +46,40 @@ def clean_youtube_url(url: str) -> str:
             return f"https://www.youtube.com/watch?v={video_id}"
     return url
 
+def extract_best_media_url(info, media_type: str) -> str:
+    """
+    Extracts valid direct audio/video stream URL while filtering out storyboard JPG/WEBP images.
+    """
+    direct_url = info.get('url')
+    if direct_url and not direct_url.endswith('.jpg') and not direct_url.endswith('.webp'):
+        return direct_url
+        
+    if 'requested_formats' in info and len(info['requested_formats']) > 0:
+        for f in info['requested_formats']:
+            u = f.get('url')
+            if u and not u.endswith('.jpg') and not u.endswith('.webp'):
+                return u
+
+    formats = info.get('formats', [])
+    valid_formats = [
+        f for f in formats 
+        if f.get('url') and 
+        f.get('acodec') != 'none' and 
+        f.get('ext') in ['m4a', 'mp4', 'webm', 'opus', 'aac', '3gp'] and
+        not f.get('url', '').endswith('.jpg') and
+        not f.get('url', '').endswith('.webp')
+    ]
+    
+    if media_type == "mp3":
+        audio_only = [f for f in valid_formats if f.get('vcodec') == 'none']
+        if audio_only:
+            return audio_only[-1].get('url')
+            
+    if valid_formats:
+        return valid_formats[-1].get('url')
+        
+    return None
+
 @app.get("/")
 def read_root():
     return {"message": "YouTube Media Extractor API is running!", "health": "/api/health"}
@@ -135,7 +169,7 @@ def download_media(
         raise HTTPException(status_code=400, detail="URL is required")
 
     clean_url = clean_youtube_url(url)
-    target_format = 'ba/b' if media_type == "mp3" else 'b/ba'
+    target_format = 'ba/b/best' if media_type == "mp3" else 'b/ba/best'
 
     ydl_opts = {
         'format': target_format,
@@ -152,13 +186,7 @@ def download_media(
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(clean_url, download=False)
             
-            direct_url = info.get('url')
-            if not direct_url and 'requested_formats' in info and len(info['requested_formats']) > 0:
-                direct_url = info['requested_formats'][0].get('url')
-            if not direct_url and 'formats' in info and len(info['formats']) > 0:
-                valid_formats = [f for f in info['formats'] if f.get('url')]
-                if valid_formats:
-                    direct_url = valid_formats[-1].get('url')
+            direct_url = extract_best_media_url(info, media_type)
 
             if not direct_url:
                 raise HTTPException(status_code=500, detail="Could not extract direct stream URL")
@@ -238,7 +266,7 @@ try:
         if not url:
             return jsonify({"detail": "URL is required"}), 400
         clean_url = clean_youtube_url(url)
-        target_format = 'ba/b' if media_type == "mp3" else 'b/ba'
+        target_format = 'ba/b/best' if media_type == "mp3" else 'b/ba/best'
         ydl_opts = {
             'format': target_format, 'quiet': True, 'skip_download': True, 'cachedir': False, 'nocheckcertificate': True,
             'extractor_args': {'youtube': {'player_client': ['android']}}
@@ -248,13 +276,7 @@ try:
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(clean_url, download=False)
-                direct_url = info.get('url')
-                if not direct_url and 'requested_formats' in info and len(info['requested_formats']) > 0:
-                    direct_url = info['requested_formats'][0].get('url')
-                if not direct_url and 'formats' in info and len(info['formats']) > 0:
-                    valid_formats = [f for f in info['formats'] if f.get('url')]
-                    if valid_formats:
-                        direct_url = valid_formats[-1].get('url')
+                direct_url = extract_best_media_url(info, media_type)
                 if not direct_url:
                     return jsonify({"detail": "Could not extract direct stream URL"}), 500
                 return flask_redirect(direct_url, code=302)
