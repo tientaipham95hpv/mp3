@@ -1,9 +1,12 @@
 import os
 import tempfile
 import urllib.parse
+import urllib.request
+import json
+import re
 from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse, RedirectResponse
 import yt_dlp
 
 app = FastAPI(
@@ -28,8 +31,6 @@ def read_root():
 @app.get("/api/health")
 def health_check():
     return {"status": "ok", "yt_dlp_version": yt_dlp.version.__version__}
-
-import re
 
 def clean_youtube_url(url: str) -> str:
     """
@@ -61,28 +62,43 @@ def get_video_info(url: str = Query(..., description="YouTube Video URL")):
         'skip_download': True,
         'cachedir': False,
         'nocheckcertificate': True,
-        'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
+        'extractor_args': {'youtube': {'player_client': ['android', 'ios']}},
     }
     
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(clean_url, download=False)
-            
-            # Duration in seconds
             duration = info.get('duration', 0)
             
             return {
-                "id": info.get('id'),
-                "title": info.get('title'),
+                "id": info.get('id', 'video'),
+                "title": info.get('title', 'YouTube Video'),
                 "artist": info.get('uploader') or info.get('artist') or "Unknown Artist",
                 "duration": duration,
                 "thumbnail": info.get('thumbnail'),
-                "webpage_url": info.get('webpage_url', url),
+                "webpage_url": info.get('webpage_url', clean_url),
             }
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error extracting video info: {str(e)}")
-
-from fastapi.responses import FileResponse, StreamingResponse, RedirectResponse
+    except Exception:
+        # Fallback: YouTube Official oEmbed API (100% IP resilient)
+        try:
+            oembed_url = f"https://www.youtube.com/oembed?url={clean_url}&format=json"
+            req = urllib.request.Request(oembed_url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=5) as response:
+                data = json.loads(response.read().decode('utf-8'))
+                
+                vid_match = re.search(r'v=([0-9A-Za-z_-]{11})', clean_url)
+                video_id = vid_match.group(1) if vid_match else "unknown"
+                
+                return {
+                    "id": video_id,
+                    "title": data.get('title', 'YouTube Video'),
+                    "artist": data.get('author_name', 'YouTube Artist'),
+                    "duration": 0.0,
+                    "thumbnail": data.get('thumbnail_url'),
+                    "webpage_url": clean_url,
+                }
+        except Exception as e2:
+            raise HTTPException(status_code=400, detail=f"Error extracting video info: {str(e2)}")
 
 @app.get("/api/download")
 def download_media(
@@ -106,7 +122,7 @@ def download_media(
             'skip_download': True,
             'cachedir': False,
             'nocheckcertificate': True,
-            'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
+            'extractor_args': {'youtube': {'player_client': ['android', 'ios']}},
         }
     else:  # mp4
         ydl_opts = {
@@ -115,7 +131,7 @@ def download_media(
             'skip_download': True,
             'cachedir': False,
             'nocheckcertificate': True,
-            'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
+            'extractor_args': {'youtube': {'player_client': ['android', 'ios']}},
         }
 
     try:
@@ -133,7 +149,6 @@ def download_media(
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Download extraction error: {str(e)}")
-
 
 if __name__ == "__main__":
     import uvicorn

@@ -6,4 +6,4 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 from main import app
 
-# Vercel Serverless Function Entrypoint v1.0.5 - Clean YouTube URL Sanitizer (youtu.be & tracking params fix)
+# Vercel Serverless Function Entrypoint v1.0.6 - android/ios player client & YouTube oEmbed API fallback
