@@ -42,8 +42,8 @@ def get_video_info(url: str = Query(..., description="YouTube Video URL")):
         'quiet': True,
         'no_warnings': True,
         'skip_download': True,
-        'format': 'best',
         'cachedir': False,
+        'nocheckcertificate': True,
     }
     
     try:
@@ -87,6 +87,7 @@ def download_media(
             'quiet': True,
             'no_warnings': True,
             'cachedir': False,
+            'nocheckcertificate': True,
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
@@ -94,15 +95,14 @@ def download_media(
             }],
         }
     else:  # mp4
-        # Format selection for video
-        video_format = f'bestvideo[height<={quality[:-1]}][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
+        video_format = 'best[ext=mp4]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best'
         ydl_opts = {
             'format': video_format,
             'outtmpl': out_template,
             'quiet': True,
             'no_warnings': True,
             'cachedir': False,
-            'merge_output_format': 'mp4',
+            'nocheckcertificate': True,
         }
 
     try:

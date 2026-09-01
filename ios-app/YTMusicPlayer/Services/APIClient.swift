@@ -12,14 +12,22 @@ public struct YouTubeVideoInfo: Codable {
 public class APIClient: ObservableObject {
     public static let shared = APIClient()
     
-    // Server IP / Host - Update this to your local server IP (e.g., http://192.168.1.50:8000) when testing on a physical iPhone!
-    @Published public var baseURL: String = "http://localhost:8000"
+    // Default production backend on Vercel
+    @Published public var baseURL: String = "https://mp3-two-swart.vercel.app"
     
     public init() {}
     
+    private func encodeQueryParam(_ value: String) -> String {
+        var allowed = CharacterSet.urlQueryAllowed
+        allowed.remove(charactersIn: "?&=+#/")
+        return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
+    }
+    
     public func fetchVideoInfo(url: String) async throws -> YouTubeVideoInfo {
-        guard let encodedURL = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let requestURL = URL(string: "\(baseURL)/api/info?url=\(encodedURL)") else {
+        let encodedURL = encodeQueryParam(url)
+        let cleanBaseURL = baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        
+        guard let requestURL = URL(string: "\(cleanBaseURL)/api/info?url=\(encodedURL)") else {
             throw URLError(.badURL)
         }
         
@@ -34,10 +42,9 @@ public class APIClient: ObservableObject {
     }
     
     public func getDownloadURL(youtubeURL: String, mediaType: MediaType, quality: String = "720p") -> URL? {
-        guard let encodedURL = youtubeURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-            return nil
-        }
-        let urlString = "\(baseURL)/api/download?url=\(encodedURL)&media_type=\(mediaType.rawValue)&quality=\(quality)"
+        let encodedURL = encodeQueryParam(youtubeURL)
+        let cleanBaseURL = baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let urlString = "\(cleanBaseURL)/api/download?url=\(encodedURL)&media_type=\(mediaType.rawValue)&quality=\(quality)"
         return URL(string: urlString)
     }
 }
