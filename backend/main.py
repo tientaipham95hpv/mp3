@@ -81,8 +81,9 @@ def get_video_info(url: str = Query(..., description="YouTube Video URL")):
     except Exception:
         # Fallback: YouTube Official oEmbed API (100% IP resilient)
         try:
-            oembed_url = f"https://www.youtube.com/oembed?url={clean_url}&format=json"
-            req = urllib.request.Request(oembed_url, headers={"User-Agent": "Mozilla/5.0"})
+            encoded_url = urllib.parse.quote(clean_url, safe='')
+            oembed_url = f"https://www.youtube.com/oembed?url={encoded_url}&format=json"
+            req = urllib.request.Request(oembed_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
             with urllib.request.urlopen(req, timeout=5) as response:
                 data = json.loads(response.read().decode('utf-8'))
                 

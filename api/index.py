@@ -6,4 +6,4 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 from main import app
 
-# Vercel Serverless Function Entrypoint v1.0.6 - android/ios player client & YouTube oEmbed API fallback
+# Vercel Serverless Function Entrypoint v1.0.7 - Encoded oEmbed API Fallback Fix
