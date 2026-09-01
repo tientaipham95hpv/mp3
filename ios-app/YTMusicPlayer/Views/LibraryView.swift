@@ -1,5 +1,11 @@
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
+
 struct LibraryView: View {
     @ObservedObject var downloadManager = DownloadManager.shared
     @ObservedObject var audioPlayerManager = AudioPlayerManager.shared
@@ -8,6 +14,14 @@ struct LibraryView: View {
     @State private var searchText: String = ""
     @State private var selectedVideoItem: MediaItem? = nil
     @State private var showAudioPlayerModal: Bool = false
+    
+    private var cardBackgroundColor: Color {
+        #if canImport(UIKit)
+        return Color(UIColor.secondarySystemGroupedBackground)
+        #else
+        return Color.gray.opacity(0.15)
+        #endif
+    }
     
     var filteredItems: [MediaItem] {
         downloadManager.library.filter { item in
@@ -41,7 +55,7 @@ struct LibraryView: View {
                     }
                 }
                 .padding(10)
-                .background(Color(UIColor.secondarySystemGroupedBackground))
+                .background(cardBackgroundColor)
                 .cornerRadius(10)
                 .padding(.horizontal)
                 .padding(.bottom, 8)

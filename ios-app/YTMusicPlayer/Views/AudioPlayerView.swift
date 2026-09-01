@@ -1,11 +1,25 @@
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
+
 struct AudioPlayerView: View {
     @Environment(\.dismiss) var dismiss
     @ObservedObject var playerManager = AudioPlayerManager.shared
     
     @State private var isDraggingSeekbar: Bool = false
     @State private var dragTime: Double = 0.0
+    
+    private var backgroundColor: Color {
+        #if canImport(UIKit)
+        return Color(UIColor.systemBackground)
+        #else
+        return Color.black
+        #endif
+    }
     
     var body: some View {
         VStack(spacing: 24) {
@@ -119,7 +133,7 @@ struct AudioPlayerView: View {
             Spacer()
         }
         .padding()
-        .background(Color(UIColor.systemBackground).ignoresSafeArea())
+        .background(backgroundColor.ignoresSafeArea())
     }
     
     private func formatTime(_ seconds: Double) -> String {

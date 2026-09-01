@@ -1,8 +1,22 @@
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
+
 struct MiniPlayerView: View {
     @ObservedObject var playerManager = AudioPlayerManager.shared
     @Binding var isExpanded: Bool
+    
+    private var cardBackgroundColor: Color {
+        #if canImport(UIKit)
+        return Color(UIColor.secondarySystemGroupedBackground)
+        #else
+        return Color.gray.opacity(0.15)
+        #endif
+    }
     
     var body: some View {
         if let track = playerManager.currentTrack, track.mediaType == .audio {
@@ -53,7 +67,7 @@ struct MiniPlayerView: View {
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(UIColor.secondarySystemGroupedBackground))
+                    .fill(cardBackgroundColor)
                     .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
             )
             .padding(.horizontal, 8)

@@ -1,5 +1,11 @@
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
+
 struct DownloaderView: View {
     @State private var youtubeURL: String = ""
     @State private var selectedMediaType: MediaType = .audio
@@ -8,6 +14,14 @@ struct DownloaderView: View {
     
     @ObservedObject var downloadManager = DownloadManager.shared
     @ObservedObject var apiClient = APIClient.shared
+    
+    private var cardBackgroundColor: Color {
+        #if canImport(UIKit)
+        return Color(UIColor.secondarySystemGroupedBackground)
+        #else
+        return Color.gray.opacity(0.15)
+        #endif
+    }
     
     var body: some View {
         NavigationView {
@@ -58,7 +72,7 @@ struct DownloaderView: View {
                             }
                         }
                         .padding(12)
-                        .background(Color(UIColor.secondarySystemGroupedBackground))
+                        .background(cardBackgroundColor)
                         .cornerRadius(12)
                     }
                     .padding(.horizontal)
@@ -91,7 +105,7 @@ struct DownloaderView: View {
                         }
                     }
                     .padding()
-                    .background(Color(UIColor.secondarySystemGroupedBackground))
+                    .background(cardBackgroundColor)
                     .cornerRadius(12)
                     .padding(.horizontal)
                     
@@ -157,7 +171,7 @@ struct DownloaderView: View {
             }
             .padding()
             .frame(maxWidth: .infinity)
-            .background(Color(UIColor.secondarySystemGroupedBackground))
+            .background(cardBackgroundColor)
             .cornerRadius(12)
             
         case .downloading(let progress):
@@ -174,7 +188,7 @@ struct DownloaderView: View {
                     .accentColor(.purple)
             }
             .padding()
-            .background(Color(UIColor.secondarySystemGroupedBackground))
+            .background(cardBackgroundColor)
             .cornerRadius(12)
             
         case .completed(let item):
@@ -219,9 +233,15 @@ struct DownloaderView: View {
     }
     
     private func pasteFromClipboard() {
+        #if canImport(UIKit)
         if let clipboardString = UIPasteboard.general.string {
             youtubeURL = clipboardString
         }
+        #elseif canImport(AppKit)
+        if let clipboardString = NSPasteboard.general.string(forType: .string) {
+            youtubeURL = clipboardString
+        }
+        #endif
     }
     
     private func startDownload() {

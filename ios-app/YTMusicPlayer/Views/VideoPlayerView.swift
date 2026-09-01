@@ -1,6 +1,12 @@
 import SwiftUI
 import AVKit
 
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
+
 struct VideoPlayerView: View {
     @Environment(\.dismiss) var dismiss
     let videoURL: URL
@@ -28,6 +34,7 @@ struct VideoPlayerView: View {
     }
 }
 
+#if canImport(UIKit)
 struct NativeVideoPlayer: UIViewControllerRepresentable {
     let url: URL
     
@@ -48,3 +55,19 @@ struct NativeVideoPlayer: UIViewControllerRepresentable {
         // No update needed for basic player
     }
 }
+#elseif canImport(AppKit)
+struct NativeVideoPlayer: NSViewRepresentable {
+    let url: URL
+    
+    func makeNSView(context: Context) -> AVPlayerView {
+        let player = AVPlayer(url: url)
+        let playerView = AVPlayerView()
+        playerView.player = player
+        playerView.controlsStyle = .inline
+        player.play()
+        return playerView
+    }
+    
+    func updateNSView(_ nsView: AVPlayerView, context: Context) {}
+}
+#endif
