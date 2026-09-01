@@ -11,116 +11,133 @@ struct DownloaderView: View {
     @State private var selectedMediaType: MediaType = .audio
     @State private var selectedQuality: String = "720p"
     @State private var showServerSettings: Bool = false
-    @State private var isAnimatingIcon: Bool = false
+    @State private var isGlowing: Bool = false
     
     @ObservedObject var downloadManager = DownloadManager.shared
     @ObservedObject var apiClient = APIClient.shared
     
-    private var darkBackgroundGradient: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(red: 0.06, green: 0.05, blue: 0.12),
-                Color(red: 0.02, green: 0.02, blue: 0.05)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-    
     private var primaryGradient: LinearGradient {
         LinearGradient(
-            colors: [Color(red: 0.65, green: 0.25, blue: 0.98), Color(red: 0.95, green: 0.20, blue: 0.55)],
+            colors: [Color(red: 0.68, green: 0.22, blue: 0.98), Color(red: 0.98, green: 0.18, blue: 0.52)],
             startPoint: .leading,
             endPoint: .trailing
         )
     }
 
     var body: some View {
-        NavigationView {
-            ZStack {
-                darkBackgroundGradient.ignoresSafeArea()
-                
-                // Ambient Glow Orbs
-                VStack {
-                    HStack {
-                        Circle()
-                            .fill(Color.purple.opacity(0.25))
-                            .frame(width: 250, height: 250)
-                            .blur(radius: 70)
-                            .offset(x: -80, y: -60)
-                        Spacer()
-                    }
+        ZStack {
+            // Full Screen Obsidian Background
+            Color(red: 0.05, green: 0.04, blue: 0.09).ignoresSafeArea()
+            
+            // Ambient Neon Blur Glows
+            VStack {
+                HStack {
+                    Circle()
+                        .fill(Color(red: 0.68, green: 0.22, blue: 0.98).opacity(0.22))
+                        .frame(width: 280, height: 280)
+                        .blur(radius: 80)
+                        .offset(x: -80, y: -60)
                     Spacer()
-                    HStack {
-                        Spacer()
-                        Circle()
-                            .fill(Color.indigo.opacity(0.25))
-                            .frame(width: 280, height: 280)
-                            .blur(radius: 80)
-                            .offset(x: 80, y: 80)
+                }
+                Spacer()
+                HStack {
+                    Spacer()
+                    Circle()
+                        .fill(Color(red: 0.98, green: 0.18, blue: 0.52).opacity(0.22))
+                        .frame(width: 300, height: 300)
+                        .blur(radius: 90)
+                        .offset(x: 80, y: 80)
+                }
+            }
+            .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // Top Header Bar
+                HStack {
+                    HStack(spacing: 10) {
+                        ZStack {
+                            Circle()
+                                .fill(primaryGradient)
+                                .frame(width: 38, height: 38)
+                                .shadow(color: Color.purple.opacity(0.5), radius: 8, x: 0, y: 3)
+                            Image(systemName: "music.note")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("YT MUSIC PRO")
+                                .font(.system(size: 16, weight: .black, design: .rounded))
+                                .foregroundColor(.white)
+                                .tracking(1.0)
+                            
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(Color.green)
+                                    .frame(width: 6, height: 6)
+                                Text("Online 24/7 Cloud")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(Color.green.opacity(0.9))
+                            }
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    Button(action: { showServerSettings = true }) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.white.opacity(0.08))
+                                .frame(width: 40, height: 40)
+                                .overlay(Circle().stroke(Color.white.opacity(0.12), lineWidth: 1))
+                            Image(systemName: "slider.horizontal.3")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                        }
                     }
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 16)
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {
                         
-                        // Hero Header Banner
-                        VStack(spacing: 12) {
-                            ZStack {
-                                Circle()
-                                    .fill(primaryGradient)
-                                    .frame(width: 84, height: 84)
-                                    .shadow(color: Color(red: 0.65, green: 0.25, blue: 0.98).opacity(0.5), radius: 20, x: 0, y: 10)
-                                    .scaleEffect(isAnimatingIcon ? 1.05 : 0.95)
-                                    .animation(Animation.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: isAnimatingIcon)
-                                
-                                Image(systemName: "arrow.down.to.line.circle.fill")
-                                    .font(.system(size: 44, weight: .semibold))
-                                    .foregroundColor(.white)
-                            }
-                            .padding(.top, 16)
-                            .onAppear { isAnimatingIcon = true }
+                        // Hero Text
+                        VStack(spacing: 6) {
+                            Text("Tải Nhạc & Video Tốc Độ Cao")
+                                .font(.system(size: 22, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
                             
-                            VStack(spacing: 6) {
-                                Text("Tải Nhạc & Video YouTube")
-                                    .font(.system(size: 24, weight: .bold, design: .rounded))
-                                    .foregroundColor(.white)
-                                
-                                HStack(spacing: 6) {
-                                    Circle()
-                                        .fill(Color.green)
-                                        .frame(width: 8, height: 8)
-                                    Text("Máy chủ 24/7 Cloud Sẵn sàng")
-                                        .font(.system(size: 13, weight: .medium))
-                                        .foregroundColor(Color.green.opacity(0.9))
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 5)
-                                .background(Color.green.opacity(0.12))
-                                .cornerRadius(20)
-                            }
+                            Text("Tự động bóc tách MP3 320kbps & MP4 Full HD")
+                                .font(.system(size: 13))
+                                .foregroundColor(Color.white.opacity(0.6))
+                                .multilineTextAlignment(.center)
                         }
+                        .padding(.top, 8)
                         
-                        // Input Card Container
-                        VStack(alignment: .leading, spacing: 14) {
-                            Text("Dán liên kết YouTube")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(Color.white.opacity(0.8))
+                        // URL Input Glass Card
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("LIÊN KẾT YOUTUBE")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(Color.purple.opacity(0.9))
+                                .tracking(1.2)
                                 .padding(.leading, 4)
                             
                             HStack(spacing: 10) {
                                 Image(systemName: "link.circle.fill")
                                     .font(.system(size: 22))
-                                    .foregroundColor(Color(red: 0.75, green: 0.35, blue: 0.98))
+                                    .foregroundColor(Color(red: 0.85, green: 0.35, blue: 0.98))
                                 
                                 #if os(iOS)
-                                TextField("Dán link YouTube tại đây...", text: $youtubeURL)
+                                TextField("Dán đường dẫn YouTube tại đây...", text: $youtubeURL)
                                     .autocapitalization(.none)
                                     .disableAutocorrection(true)
                                     .foregroundColor(.white)
                                     .accentColor(.purple)
                                 #else
-                                TextField("Dán link YouTube tại đây...", text: $youtubeURL)
+                                TextField("Dán đường dẫn YouTube tại đây...", text: $youtubeURL)
                                     .disableAutocorrection(true)
                                     .foregroundColor(.white)
                                     .accentColor(.purple)
@@ -136,7 +153,7 @@ struct DownloaderView: View {
                                 Button(action: pasteFromClipboard) {
                                     HStack(spacing: 4) {
                                         Image(systemName: "doc.on.clipboard.fill")
-                                            .font(.caption)
+                                            .font(.system(size: 11, weight: .bold))
                                         Text("Dán")
                                             .font(.system(size: 13, weight: .bold))
                                     }
@@ -148,76 +165,93 @@ struct DownloaderView: View {
                                     .shadow(color: Color.purple.opacity(0.4), radius: 6, x: 0, y: 3)
                                 }
                             }
-                            .padding(14)
-                            .background(Color.white.opacity(0.07))
+                            .padding(12)
+                            .background(Color.white.opacity(0.06))
                             .cornerRadius(16)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 16)
                                     .stroke(Color.white.opacity(0.12), lineWidth: 1)
                             )
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, 20)
                         
-                        // Media Type & Quality Selector
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("Định dạng xuất file")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(Color.white.opacity(0.8))
+                        // Media Format Pills Selection
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("ĐỊNH DẠNG XUẤT FILE")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(Color.purple.opacity(0.9))
+                                .tracking(1.2)
                                 .padding(.leading, 4)
                             
                             HStack(spacing: 12) {
-                                // MP3 Pill
+                                // MP3 Audio Pill
                                 Button(action: { selectedMediaType = .audio }) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "music.note")
-                                            .font(.system(size: 18, weight: .semibold))
+                                    HStack(spacing: 10) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(selectedMediaType == .audio ? Color.white.opacity(0.2) : Color.white.opacity(0.08))
+                                                .frame(width: 36, height: 36)
+                                            Image(systemName: "music.note")
+                                                .font(.system(size: 16, weight: .bold))
+                                        }
+                                        
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text("MP3 Âm thanh")
                                                 .font(.system(size: 14, weight: .bold))
-                                            Text("Chất lượng cao 320kbps")
+                                            Text("HQ 320kbps")
                                                 .font(.system(size: 10))
                                                 .opacity(0.8)
                                         }
+                                        Spacer()
                                     }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 14)
+                                    .padding(.leading, 8)
+                                    .padding(.trailing, 12)
+                                    .padding(.vertical, 10)
                                     .background(
                                         selectedMediaType == .audio
                                         ? AnyView(primaryGradient)
-                                        : AnyView(Color.white.opacity(0.06))
+                                        : AnyView(Color.white.opacity(0.05))
                                     )
                                     .foregroundColor(.white)
-                                    .cornerRadius(16)
+                                    .cornerRadius(18)
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 16)
+                                        RoundedRectangle(cornerRadius: 18)
                                             .stroke(selectedMediaType == .audio ? Color.clear : Color.white.opacity(0.1), lineWidth: 1)
                                     )
                                 }
                                 
-                                // MP4 Pill
+                                // MP4 Video Pill
                                 Button(action: { selectedMediaType = .video }) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "film.fill")
-                                            .font(.system(size: 18, weight: .semibold))
+                                    HStack(spacing: 10) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(selectedMediaType == .video ? Color.white.opacity(0.2) : Color.white.opacity(0.08))
+                                                .frame(width: 36, height: 36)
+                                            Image(systemName: "film.fill")
+                                                .font(.system(size: 16, weight: .bold))
+                                        }
+                                        
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text("MP4 Video")
                                                 .font(.system(size: 14, weight: .bold))
-                                            Text("Hình ảnh HD Offline")
+                                            Text("Hình ảnh HD")
                                                 .font(.system(size: 10))
                                                 .opacity(0.8)
                                         }
+                                        Spacer()
                                     }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 14)
+                                    .padding(.leading, 8)
+                                    .padding(.trailing, 12)
+                                    .padding(.vertical, 10)
                                     .background(
                                         selectedMediaType == .video
                                         ? AnyView(primaryGradient)
-                                        : AnyView(Color.white.opacity(0.06))
+                                        : AnyView(Color.white.opacity(0.05))
                                     )
                                     .foregroundColor(.white)
-                                    .cornerRadius(16)
+                                    .cornerRadius(18)
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 16)
+                                        RoundedRectangle(cornerRadius: 18)
                                             .stroke(selectedMediaType == .video ? Color.clear : Color.white.opacity(0.1), lineWidth: 1)
                                     )
                                 }
@@ -239,10 +273,10 @@ struct DownloaderView: View {
                                 }
                                 .padding(12)
                                 .background(Color.white.opacity(0.05))
-                                .cornerRadius(12)
+                                .cornerRadius(14)
                             }
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, 20)
                         
                         // Download Action Button
                         Button(action: startDownload) {
@@ -256,30 +290,30 @@ struct DownloaderView: View {
                             .padding(.vertical, 16)
                             .background(
                                 youtubeURL.isEmpty
-                                ? LinearGradient(colors: [Color.gray.opacity(0.3), Color.gray.opacity(0.2)], startPoint: .leading, endPoint: .trailing)
+                                ? LinearGradient(colors: [Color.white.opacity(0.12), Color.white.opacity(0.08)], startPoint: .leading, endPoint: .trailing)
                                 : primaryGradient
                             )
-                            .foregroundColor(.white)
-                            .cornerRadius(18)
+                            .foregroundColor(youtubeURL.isEmpty ? Color.white.opacity(0.4) : .white)
+                            .cornerRadius(20)
                             .shadow(color: youtubeURL.isEmpty ? Color.clear : Color.purple.opacity(0.5), radius: 12, x: 0, y: 6)
                         }
                         .disabled(youtubeURL.isEmpty)
-                        .padding(.horizontal)
+                        .padding(.horizontal, 20)
                         
-                        // Downloading Progress Card
+                        // Live Progress State Cards
                         if case .downloading(let progress) = downloadManager.state {
                             VStack(spacing: 14) {
                                 HStack {
                                     Image(systemName: "arrow.triangle.2.circlepath")
                                         .font(.title3)
                                         .foregroundColor(.purple)
-                                    Text("Đang bóc tách & tải dữ liệu...")
+                                    Text("Đang tải dữ liệu...")
                                         .font(.system(size: 15, weight: .semibold))
                                         .foregroundColor(.white)
                                     Spacer()
                                     Text("\(Int(progress * 100))%")
                                         .font(.system(size: 16, weight: .bold, design: .monospaced))
-                                        .foregroundColor(Color(red: 0.75, green: 0.35, blue: 0.98))
+                                        .foregroundColor(Color(red: 0.85, green: 0.35, blue: 0.98))
                                 }
                                 
                                 GeometryReader { geometry in
@@ -299,7 +333,7 @@ struct DownloaderView: View {
                             .background(Color.white.opacity(0.08))
                             .cornerRadius(20)
                             .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.purple.opacity(0.4), lineWidth: 1))
-                            .padding(.horizontal)
+                            .padding(.horizontal, 20)
                         } else if case .failed(let error) = downloadManager.state {
                             VStack(spacing: 10) {
                                 Image(systemName: "exclamationmark.triangle.fill")
@@ -317,7 +351,7 @@ struct DownloaderView: View {
                             .background(Color.red.opacity(0.15))
                             .cornerRadius(20)
                             .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.red.opacity(0.3), lineWidth: 1))
-                            .padding(.horizontal)
+                            .padding(.horizontal, 20)
                         } else if case .completed(let item) = downloadManager.state {
                             VStack(spacing: 10) {
                                 Image(systemName: "checkmark.circle.fill")
@@ -335,35 +369,12 @@ struct DownloaderView: View {
                             .background(Color.green.opacity(0.15))
                             .cornerRadius(20)
                             .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.green.opacity(0.3), lineWidth: 1))
-                            .padding(.horizontal)
+                            .padding(.horizontal, 20)
                         }
                     }
-                    .padding(.bottom, 100)
+                    .padding(.bottom, 160)
                 }
             }
-            .navigationTitle("Khám Phá & Tải Nhạc")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showServerSettings = true }) {
-                        Image(systemName: "slider.horizontal.3")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.purple)
-                    }
-                }
-            }
-            #else
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button(action: { showServerSettings = true }) {
-                        Image(systemName: "slider.horizontal.3")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.purple)
-                    }
-                }
-            }
-            #endif
             .sheet(isPresented: $showServerSettings) {
                 ServerSettingsView()
             }
@@ -385,74 +396,5 @@ struct DownloaderView: View {
     private func startDownload() {
         guard !youtubeURL.isEmpty else { return }
         downloadManager.startDownload(youtubeURL: youtubeURL, mediaType: selectedMediaType, quality: selectedQuality)
-    }
-}
-
-struct ServerSettingsView: View {
-    @Environment(\.dismiss) var dismiss
-    @ObservedObject var apiClient = APIClient.shared
-    @State private var serverAddress: String = ""
-    
-    var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("Địa chỉ Backend Server hiện tại")) {
-                    #if os(iOS)
-                    TextField("https://upgrade-patches-spiritual-editing.trycloudflare.com", text: $serverAddress)
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
-                    #else
-                    TextField("https://upgrade-patches-spiritual-editing.trycloudflare.com", text: $serverAddress)
-                        .disableAutocorrection(true)
-                    #endif
-                }
-                
-                Section(header: Text("Chọn nhanh Server 24/7 Cloud (Bấm 1-Click)")) {
-                    Button(action: {
-                        serverAddress = "https://upgrade-patches-spiritual-editing.trycloudflare.com"
-                    }) {
-                        HStack {
-                            Image(systemName: "bolt.horizontal.circle.fill")
-                                .foregroundColor(.green)
-                            VStack(alignment: .leading) {
-                                Text("🌐 Server 24/7 Cloud (Khuyên dùng)")
-                                    .font(.subheadline.bold())
-                                Text("https://upgrade-patches-spiritual-editing.trycloudflare.com")
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
-                            }
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Cấu hình Backend")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Lưu") {
-                        if !serverAddress.isEmpty {
-                            apiClient.baseURL = serverAddress
-                        }
-                        dismiss()
-                    }
-                }
-            }
-            #else
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Lưu") {
-                        if !serverAddress.isEmpty {
-                            apiClient.baseURL = serverAddress
-                        }
-                        dismiss()
-                    }
-                }
-            }
-            #endif
-            .onAppear {
-                serverAddress = apiClient.baseURL
-            }
-        }
     }
 }
