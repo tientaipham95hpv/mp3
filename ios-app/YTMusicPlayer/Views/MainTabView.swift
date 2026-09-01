@@ -8,7 +8,7 @@ struct MainTabView: View {
         // Dark Glassmorphism TabBar Styling
         #if canImport(UIKit)
         let appearance = UITabBarAppearance()
-        appearance.configureWithDarkBackground()
+        appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = UIColor(red: 0.05, green: 0.05, blue: 0.08, alpha: 0.95)
         
         UITabBar.appearance().standardAppearance = appearance
