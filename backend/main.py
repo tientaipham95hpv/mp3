@@ -139,9 +139,15 @@ def download_media(
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(clean_url, download=False)
+                
                 direct_url = info.get('url')
                 if not direct_url and 'requested_formats' in info and len(info['requested_formats']) > 0:
                     direct_url = info['requested_formats'][0].get('url')
+                if not direct_url and 'formats' in info and len(info['formats']) > 0:
+                    valid_formats = [f for f in info['formats'] if f.get('url')]
+                    if valid_formats:
+                        direct_url = valid_formats[-1].get('url')
+
                 if direct_url:
                     break
         except Exception as e:
