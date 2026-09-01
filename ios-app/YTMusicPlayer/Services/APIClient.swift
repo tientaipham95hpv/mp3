@@ -20,7 +20,7 @@ public class APIClient: ObservableObject {
     }
     
     public init() {
-        self.baseURL = "https://upgrade-patches-spiritual-editing.trycloudflare.com"
+        self.baseURL = "https://cookbook-inn-tea-converted.trycloudflare.com"
         UserDefaults.standard.set(self.baseURL, forKey: "custom_backend_url")
     }
     
