@@ -12,7 +12,7 @@ public struct YouTubeVideoInfo: Codable {
 public class APIClient: ObservableObject {
     public static let shared = APIClient()
     
-    // Default production backend URL with persistent storage
+    // Default Cloudflare Tunnel URL with persistent storage
     @Published public var baseURL: String {
         didSet {
             UserDefaults.standard.set(baseURL, forKey: "custom_backend_url")
@@ -20,7 +20,7 @@ public class APIClient: ObservableObject {
     }
     
     public init() {
-        self.baseURL = UserDefaults.standard.string(forKey: "custom_backend_url") ?? "https://mp3-two-swart.vercel.app"
+        self.baseURL = UserDefaults.standard.string(forKey: "custom_backend_url") ?? "https://conclusion-moment-wires-pmc.trycloudflare.com"
     }
     
     private func cleanYouTubeID(_ url: String) -> String {

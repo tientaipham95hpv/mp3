@@ -99,53 +99,95 @@ struct DownloaderView: View {
                             HStack {
                                 Text("Chất lượng Video:")
                                     .font(.subheadline)
+                                    .foregroundColor(.gray)
                                 Spacer()
                                 Picker("Chất lượng", selection: $selectedQuality) {
-                                    Text("720p (HD)").tag("720p")
-                                    Text("1080p (Full HD)").tag("1080p")
-                                    Text("360p (Tiết kiệm)").tag("360p")
+                                    Text("360p").tag("360p")
+                                    Text("720p HD").tag("720p")
+                                    Text("1080p Full HD").tag("1080p")
                                 }
                                 .pickerStyle(MenuPickerStyle())
                             }
-                            .padding(.horizontal, 4)
+                            .padding(.top, 4)
                         }
                     }
-                    .padding()
+                    .padding(16)
                     .background(cardBackgroundColor)
                     .cornerRadius(12)
                     .padding(.horizontal)
                     
-                    // Download Button
+                    // Download Action Button
                     Button(action: startDownload) {
                         HStack {
-                            Image(systemName: selectedMediaType == .audio ? "music.note" : "video.fill")
-                            Text(downloadButtonTitle)
+                            Image(systemName: "arrow.down.to.line.compact")
+                            Text("Bắt đầu Tải về")
                                 .bold()
                         }
                         .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(youtubeURL.isEmpty ? Color.gray.opacity(0.4) : Color.purple)
+                        .padding(.vertical, 14)
+                        .background(youtubeURL.isEmpty ? Color.gray.opacity(0.5) : Color.purple)
                         .foregroundColor(.white)
-                        .cornerRadius(14)
-                        .shadow(color: youtubeURL.isEmpty ? .clear : Color.purple.opacity(0.3), radius: 8, x: 0, y: 4)
+                        .cornerRadius(12)
                     }
                     .disabled(youtubeURL.isEmpty)
                     .padding(.horizontal)
                     
-                    // Download Progress / Status Card
-                    statusCardView
+                    // Status & Progress Card
+                    if case .downloading(let progress) = downloadManager.state {
+                        VStack(spacing: 12) {
+                            Text("Đang tải dữ liệu...")
+                                .font(.headline)
+                            ProgressView(value: progress)
+                                .accentColor(.purple)
+                            Text("\(Int(progress * 100))%")
+                                .font(.caption.bold())
+                                .foregroundColor(.purple)
+                        }
+                        .padding(16)
+                        .background(cardBackgroundColor)
+                        .cornerRadius(12)
                         .padding(.horizontal)
-                    
-                    Spacer(minLength: 40)
+                    } else if case .failed(let error) = downloadManager.state {
+                        VStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.red)
+                            Text("Lỗi Tải Xuống")
+                                .font(.headline).foregroundColor(.red)
+                            Text(error)
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(16)
+                        .background(Color.red.opacity(0.1))
+                        .cornerRadius(12)
+                        .padding(.horizontal)
+                    } else if case .completed(let item) = downloadManager.state {
+                        VStack(spacing: 8) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                            Text("Tải về Thành công!")
+                                .font(.headline).foregroundColor(.green)
+                            Text(item.title)
+                                .font(.caption.bold())
+                                .lineLimit(1)
+                        }
+                        .padding(16)
+                        .background(Color.green.opacity(0.1))
+                        .cornerRadius(12)
+                        .padding(.horizontal)
+                    }
                 }
+                .padding(.bottom, 24)
             }
-            .navigationTitle("Tải về")
+            .navigationTitle("Tải Nhạc")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showServerSettings = true }) {
-                        Image(systemName: "gearshape")
+                        Image(systemName: "gearshape.fill")
+                            .foregroundColor(.purple)
                     }
                 }
             }
@@ -153,7 +195,8 @@ struct DownloaderView: View {
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button(action: { showServerSettings = true }) {
-                        Image(systemName: "gearshape")
+                        Image(systemName: "gearshape.fill")
+                            .foregroundColor(.purple)
                     }
                 }
             }
@@ -161,90 +204,6 @@ struct DownloaderView: View {
             .sheet(isPresented: $showServerSettings) {
                 ServerSettingsView()
             }
-        }
-    }
-    
-    private var downloadButtonTitle: String {
-        switch downloadManager.state {
-        case .fetchingInfo, .downloading:
-            return "Đang xử lý..."
-        default:
-            return selectedMediaType == .audio ? "Tải File MP3" : "Tải Video MP4"
-        }
-    }
-    
-    @ViewBuilder
-    private var statusCardView: some View {
-        switch downloadManager.state {
-        case .idle:
-            EmptyView()
-        case .fetchingInfo:
-            HStack(spacing: 12) {
-                ProgressView()
-                Text("Đang kết nối & phân tích link YouTube...")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(cardBackgroundColor)
-            .cornerRadius(12)
-            
-        case .downloading(let progress):
-            VStack(spacing: 10) {
-                HStack {
-                    Text("Đang tải file...")
-                        .font(.subheadline.bold())
-                    Spacer()
-                    Text(String(format: "%.0f%%", progress * 100))
-                        .font(.subheadline.monospacedDigit().bold())
-                        .foregroundColor(.purple)
-                }
-                ProgressView(value: progress)
-                    .accentColor(.purple)
-            }
-            .padding()
-            .background(cardBackgroundColor)
-            .cornerRadius(12)
-            
-        case .completed(let item):
-            HStack(spacing: 12) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.title2)
-                    .foregroundColor(.green)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Tải thành công!")
-                        .font(.headline)
-                        .foregroundColor(.green)
-                    Text(item.title)
-                        .font(.caption)
-                        .lineLimit(1)
-                }
-                Spacer()
-            }
-            .padding()
-            .background(Color.green.opacity(0.1))
-            .cornerRadius(12)
-            
-        case .failed(let message):
-            HStack(spacing: 12) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.title2)
-                    .foregroundColor(.red)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Lỗi tải xuống")
-                        .font(.headline)
-                        .foregroundColor(.red)
-                    Text(message)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
-                }
-                Spacer()
-            }
-            .padding()
-            .background(Color.red.opacity(0.1))
-            .cornerRadius(12)
         }
     }
     
@@ -274,15 +233,49 @@ struct ServerSettingsView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Địa chỉ Backend Server"), footer: Text("Dùng localhost nếu chạy iOS Simulator. Nếu test trên iPhone thật, nhập IP máy tính của bạn (VD: http://192.168.1.10:8000)")) {
+                Section(header: Text("Địa chỉ Backend Server hiện tại")) {
                     #if os(iOS)
-                    TextField("http://localhost:8000", text: $serverAddress)
+                    TextField("http://192.168.2.92:8000", text: $serverAddress)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
                     #else
-                    TextField("http://localhost:8000", text: $serverAddress)
+                    TextField("http://192.168.2.92:8000", text: $serverAddress)
                         .disableAutocorrection(true)
                     #endif
+                }
+                
+                Section(header: Text("Chọn nhanh Server có sẵn (Bấm 1-Click)")) {
+                    Button(action: {
+                        serverAddress = "https://conclusion-moment-wires-pmc.trycloudflare.com"
+                    }) {
+                        HStack {
+                            Image(systemName: "bolt.horizontal.circle.fill")
+                                .foregroundColor(.green)
+                            VStack(alignment: .leading) {
+                                Text("🌐 Dùng Cloudflare Tunnel (Khuyên dùng)")
+                                    .font(.subheadline.bold())
+                                Text("https://conclusion-moment-wires-pmc.trycloudflare.com")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                    }
+                    
+                    Button(action: {
+                        serverAddress = "http://192.168.2.92:8000"
+                    }) {
+                        HStack {
+                            Image(systemName: "wifi.circle.fill")
+                                .foregroundColor(.blue)
+                            VStack(alignment: .leading) {
+                                Text("🏠 Dùng Máy tính Local (Cùng Wifi)")
+                                    .font(.subheadline.bold())
+                                Text("http://192.168.2.92:8000")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                    }
                 }
             }
             .navigationTitle("Cấu hình Backend")
