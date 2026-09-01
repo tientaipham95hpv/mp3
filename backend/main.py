@@ -127,6 +127,9 @@ def download_media(
     direct_url = None
     last_exception = None
 
+    cookie_path = os.path.join(os.path.dirname(__file__), "cookies.txt")
+    has_cookies = os.path.exists(cookie_path)
+
     for client_list in client_strategies:
         ydl_opts = {
             'format': target_format,
@@ -136,6 +139,8 @@ def download_media(
             'nocheckcertificate': True,
             'extractor_args': {'youtube': {'player_client': client_list}},
         }
+        if has_cookies:
+            ydl_opts['cookiefile'] = cookie_path
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(clean_url, download=False)
