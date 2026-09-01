@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse, RedirectResponse
 import yt_dlp
 
-# Detect PythonAnywhere environment and set required proxy
+# Detect PythonAnywhere environment
 is_pythonanywhere = "PYTHONANYWHERE_DOMAIN" in os.environ or os.path.exists("/home/augustvn") or "pythonanywhere" in os.environ.get("SERVER_SOFTWARE", "")
 if is_pythonanywhere:
     proxy_url = "http://proxy.server:3128"
@@ -33,14 +33,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-def read_root():
-    return {"message": "YouTube Media Extractor API is running!", "health": "/api/health"}
-
-@app.get("/api/health")
-def health_check():
-    return {"status": "ok", "yt_dlp_version": yt_dlp.version.__version__}
-
 def clean_youtube_url(url: str) -> str:
     """
     Extracts video ID from any YouTube URL (watch, shorts, youtu.be, tracking params)
@@ -53,6 +45,14 @@ def clean_youtube_url(url: str) -> str:
         if video_id:
             return f"https://www.youtube.com/watch?v={video_id}"
     return url
+
+@app.get("/")
+def read_root():
+    return {"message": "YouTube Media Extractor API is running!", "health": "/api/health"}
+
+@app.get("/api/health")
+def health_check():
+    return {"status": "ok", "yt_dlp_version": yt_dlp.version.__version__}
 
 @app.get("/api/info")
 def get_video_info(url: str = Query(..., description="YouTube Video URL")):
@@ -167,6 +167,101 @@ def download_media(
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Download extraction error: {str(e)}")
+
+# Native Flask WSGI Application for PythonAnywhere 100% instant response
+try:
+    from flask import Flask, request as flask_request, jsonify, redirect as flask_redirect
+    
+    flask_app = Flask(__name__)
+    
+    @flask_app.route('/')
+    def flask_home():
+        return jsonify({"message": "YouTube Media Extractor API is running!", "health": "/api/health"})
+
+    @flask_app.route('/api/health')
+    def flask_health():
+        return jsonify({"status": "ok", "yt_dlp_version": yt_dlp.version.__version__})
+
+    @flask_app.route('/api/info')
+    def flask_info():
+        url = flask_request.args.get('url')
+        if not url:
+            return jsonify({"detail": "URL cannot be empty"}), 400
+        clean_url = clean_youtube_url(url)
+        ydl_opts = {
+            'quiet': True, 'no_warnings': True, 'skip_download': True, 'cachedir': False, 'nocheckcertificate': True,
+            'extractor_args': {'youtube': {'player_client': ['android_vr', 'android']}}
+        }
+        if is_pythonanywhere:
+            ydl_opts['proxy'] = "http://proxy.server:3128"
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(clean_url, download=False)
+                return jsonify({
+                    "id": info.get('id', 'video'),
+                    "title": info.get('title', 'YouTube Video'),
+                    "artist": info.get('uploader') or info.get('artist') or "Unknown Artist",
+                    "duration": info.get('duration', 0),
+                    "thumbnail": info.get('thumbnail'),
+                    "webpage_url": info.get('webpage_url', clean_url)
+                })
+        except Exception:
+            try:
+                encoded_url = urllib.parse.quote(clean_url, safe='')
+                oembed_url = f"https://www.youtube.com/oembed?url={encoded_url}&format=json"
+                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+                if is_pythonanywhere:
+                    proxy_handler = urllib.request.ProxyHandler({'http': 'http://proxy.server:3128', 'https': 'http://proxy.server:3128'})
+                    opener = urllib.request.build_opener(proxy_handler)
+                    req = urllib.request.Request(oembed_url, headers=headers)
+                    response = opener.open(req, timeout=5)
+                else:
+                    req = urllib.request.Request(oembed_url, headers=headers)
+                    response = urllib.request.urlopen(req, timeout=5)
+                data = json.loads(response.read().decode('utf-8'))
+                vid_match = re.search(r'v=([0-9A-Za-z_-]{11})', clean_url)
+                return jsonify({
+                    "id": vid_match.group(1) if vid_match else "unknown",
+                    "title": data.get('title', 'YouTube Video'),
+                    "artist": data.get('author_name', 'YouTube Artist'),
+                    "duration": 0.0,
+                    "thumbnail": data.get('thumbnail_url'),
+                    "webpage_url": clean_url
+                })
+            except Exception as e2:
+                return jsonify({"detail": f"Error: {str(e2)}"}), 400
+
+    @flask_app.route('/api/download')
+    def flask_download():
+        url = flask_request.args.get('url')
+        media_type = flask_request.args.get('media_type', 'mp3')
+        if not url:
+            return jsonify({"detail": "URL is required"}), 400
+        clean_url = clean_youtube_url(url)
+        target_format = 'ba/b' if media_type == "mp3" else 'b/ba'
+        ydl_opts = {
+            'format': target_format, 'quiet': True, 'skip_download': True, 'cachedir': False, 'nocheckcertificate': True,
+            'extractor_args': {'youtube': {'player_client': ['android_vr', 'android']}}
+        }
+        if is_pythonanywhere:
+            ydl_opts['proxy'] = "http://proxy.server:3128"
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(clean_url, download=False)
+                direct_url = info.get('url')
+                if not direct_url and 'requested_formats' in info and len(info['requested_formats']) > 0:
+                    direct_url = info['requested_formats'][0].get('url')
+                if not direct_url and 'formats' in info and len(info['formats']) > 0:
+                    valid_formats = [f for f in info['formats'] if f.get('url')]
+                    if valid_formats:
+                        direct_url = valid_formats[-1].get('url')
+                if not direct_url:
+                    return jsonify({"detail": "Could not extract direct stream URL"}), 500
+                return flask_redirect(direct_url, code=302)
+        except Exception as e:
+            return jsonify({"detail": f"Download extraction error: {str(e)}"}), 500
+except ImportError:
+    pass
 
 if __name__ == "__main__":
     import uvicorn
