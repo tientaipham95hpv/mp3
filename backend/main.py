@@ -123,7 +123,7 @@ def download_media(
             'skip_download': True,
             'cachedir': False,
             'nocheckcertificate': True,
-            'extractor_args': {'youtube': {'player_client': ['android', 'ios']}},
+            'extractor_args': {'youtube': {'player_client': ['android_vr', 'android']}},
         }
     else:  # mp4
         ydl_opts = {
@@ -132,7 +132,7 @@ def download_media(
             'skip_download': True,
             'cachedir': False,
             'nocheckcertificate': True,
-            'extractor_args': {'youtube': {'player_client': ['android', 'ios']}},
+            'extractor_args': {'youtube': {'player_client': ['android_vr', 'android']}},
         }
 
     try:
