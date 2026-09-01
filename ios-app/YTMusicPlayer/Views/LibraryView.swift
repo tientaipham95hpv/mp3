@@ -90,7 +90,9 @@ struct LibraryView: View {
                 }
             }
             .navigationTitle("Thư viện Offline")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .sheet(item: $selectedVideoItem) { videoItem in
                 if let videoURL = videoItem.localURL {
                     VideoPlayerView(videoURL: videoURL, title: videoItem.title)

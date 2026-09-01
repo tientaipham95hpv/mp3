@@ -50,9 +50,15 @@ struct DownloaderView: View {
                         HStack {
                             Image(systemName: "link")
                                 .foregroundColor(.gray)
+                            
+                            #if os(iOS)
                             TextField("Dán đường dẫn YouTube tại đây...", text: $youtubeURL)
                                 .autocapitalization(.none)
                                 .disableAutocorrection(true)
+                            #else
+                            TextField("Dán đường dẫn YouTube tại đây...", text: $youtubeURL)
+                                .disableAutocorrection(true)
+                            #endif
                             
                             if !youtubeURL.isEmpty {
                                 Button(action: { youtubeURL = "" }) {
@@ -134,6 +140,7 @@ struct DownloaderView: View {
                 }
             }
             .navigationTitle("Tải về")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -142,6 +149,15 @@ struct DownloaderView: View {
                     }
                 }
             }
+            #else
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(action: { showServerSettings = true }) {
+                        Image(systemName: "gearshape")
+                    }
+                }
+            }
+            #endif
             .sheet(isPresented: $showServerSettings) {
                 ServerSettingsView()
             }
@@ -259,12 +275,18 @@ struct ServerSettingsView: View {
         NavigationView {
             Form {
                 Section(header: Text("Địa chỉ Backend Server"), footer: Text("Dùng localhost nếu chạy iOS Simulator. Nếu test trên iPhone thật, nhập IP máy tính của bạn (VD: http://192.168.1.10:8000)")) {
+                    #if os(iOS)
                     TextField("http://localhost:8000", text: $serverAddress)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
+                    #else
+                    TextField("http://localhost:8000", text: $serverAddress)
+                        .disableAutocorrection(true)
+                    #endif
                 }
             }
             .navigationTitle("Cấu hình Backend")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -276,6 +298,18 @@ struct ServerSettingsView: View {
                     }
                 }
             }
+            #else
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Lưu") {
+                        if !serverAddress.isEmpty {
+                            apiClient.baseURL = serverAddress
+                        }
+                        dismiss()
+                    }
+                }
+            }
+            #endif
             .onAppear {
                 serverAddress = apiClient.baseURL
             }

@@ -43,6 +43,7 @@ def get_video_info(url: str = Query(..., description="YouTube Video URL")):
         'no_warnings': True,
         'skip_download': True,
         'format': 'best',
+        'cachedir': False,
     }
     
     try:
@@ -85,6 +86,7 @@ def download_media(
             'outtmpl': out_template,
             'quiet': True,
             'no_warnings': True,
+            'cachedir': False,
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
@@ -99,6 +101,7 @@ def download_media(
             'outtmpl': out_template,
             'quiet': True,
             'no_warnings': True,
+            'cachedir': False,
             'merge_output_format': 'mp4',
         }
 

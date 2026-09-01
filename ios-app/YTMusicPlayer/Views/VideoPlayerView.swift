@@ -21,24 +21,26 @@ struct VideoPlayerView: View {
                     .ignoresSafeArea()
             }
             .navigationTitle(title)
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                #if os(iOS)
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark")
                             .foregroundColor(.white)
                     }
                 }
-                #else
+            }
+            #else
+            .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark")
                             .foregroundColor(.white)
                     }
                 }
-                #endif
             }
+            #endif
         }
     }
 }

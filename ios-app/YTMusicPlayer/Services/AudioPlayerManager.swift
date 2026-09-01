@@ -21,12 +21,14 @@ public class AudioPlayerManager: ObservableObject {
     }
     
     private func setupAudioSession() {
+        #if os(iOS)
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
             try AVAudioSession.sharedInstance().setActive(true)
         } catch {
             print("Failed to set up AVAudioSession for background audio: \(error)")
         }
+        #endif
     }
     
     public func playTrack(_ item: MediaItem, inPlaylist: [MediaItem] = []) {
