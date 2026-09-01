@@ -6,4 +6,4 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 from main import app
 
-# Vercel Serverless Function Entrypoint v1.1.3 - cookies.txt support for bot bypass
+# Vercel Serverless Function Entrypoint v1.1.4 - Live User Cookie Authentication Active
