@@ -177,3 +177,92 @@ struct LibraryView: View {
         }
     }
 }
+
+struct MediaCardRowView: View {
+    let item: MediaItem
+    let isPlaying: Bool
+    let onTap: () -> Void
+    let onDelete: () -> Void
+    
+    private var primaryGradient: LinearGradient {
+        LinearGradient(
+            colors: [Color(red: 0.68, green: 0.22, blue: 0.98), Color(red: 0.98, green: 0.18, blue: 0.52)],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 14) {
+                // Art Thumbnail with Soundwave/Icon overlay
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(
+                            item.mediaType == .audio
+                            ? LinearGradient(colors: [Color.purple.opacity(0.4), Color.indigo.opacity(0.6)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            : LinearGradient(colors: [Color.blue.opacity(0.4), Color.teal.opacity(0.6)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        )
+                    
+                    if isPlaying {
+                        Image(systemName: "waveform")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(.white)
+                    } else {
+                        Image(systemName: item.mediaType == .audio ? "music.note" : "play.fill")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                }
+                .frame(width: 52, height: 52)
+                .shadow(color: item.mediaType == .audio ? Color.purple.opacity(0.3) : Color.blue.opacity(0.3), radius: 6, x: 0, y: 3)
+                
+                // Track Info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(item.title)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                    
+                    HStack(spacing: 6) {
+                        Text(item.artist)
+                            .font(.system(size: 12))
+                            .foregroundColor(Color.white.opacity(0.6))
+                            .lineLimit(1)
+                        
+                        Text("•")
+                            .font(.system(size: 10))
+                            .foregroundColor(Color.white.opacity(0.4))
+                        
+                        Text(item.formattedDuration)
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundColor(Color(red: 0.75, green: 0.35, blue: 0.98))
+                    }
+                }
+                
+                Spacer()
+                
+                // Play Action Circle Button
+                Button(action: onTap) {
+                    ZStack {
+                        Circle()
+                            .fill(isPlaying ? primaryGradient : LinearGradient(colors: [Color.white.opacity(0.15)], startPoint: .leading, endPoint: .trailing))
+                            .frame(width: 38, height: 38)
+                        
+                        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                            .offset(x: isPlaying ? 0 : 1)
+                    }
+                }
+            }
+            .padding(12)
+            .background(Color.white.opacity(isPlaying ? 0.1 : 0.06))
+            .cornerRadius(18)
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(isPlaying ? Color.purple.opacity(0.6) : Color.white.opacity(0.08), lineWidth: 1)
+            )
+        }
+    }
+}
