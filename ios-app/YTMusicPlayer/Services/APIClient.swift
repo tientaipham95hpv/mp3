@@ -12,10 +12,16 @@ public struct YouTubeVideoInfo: Codable {
 public class APIClient: ObservableObject {
     public static let shared = APIClient()
     
-    // Default production backend on Render.com
-    @Published public var baseURL: String = "https://mp3-3rd1.onrender.com"
+    // Default local network backend IP with persistent UserDefaults storage
+    @Published public var baseURL: String {
+        didSet {
+            UserDefaults.standard.set(baseURL, forKey: "custom_backend_url")
+        }
+    }
     
-    public init() {}
+    public init() {
+        self.baseURL = UserDefaults.standard.string(forKey: "custom_backend_url") ?? "http://192.168.2.92:8000"
+    }
     
     private func encodeQueryParam(_ value: String) -> String {
         var allowed = CharacterSet.urlQueryAllowed
