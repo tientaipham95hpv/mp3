@@ -56,14 +56,18 @@ def get_video_info(url: str = Query(..., description="YouTube Video URL")):
     
     clean_url = clean_youtube_url(url)
     
+    cookie_path = os.path.join(os.path.dirname(__file__), "cookies.txt")
+    has_cookies = os.path.exists(cookie_path)
+    
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
         'skip_download': True,
         'cachedir': False,
         'nocheckcertificate': True,
-        'extractor_args': {'youtube': {'player_client': ['android_vr', 'android']}},
     }
+    if has_cookies:
+        ydl_opts['cookiefile'] = cookie_path
     
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -117,47 +121,38 @@ def download_media(
     clean_url = clean_youtube_url(url)
     target_format = 'ba/b' if media_type == "mp3" else 'b/ba'
 
-    client_strategies = [
-        ['android_vr', 'android'],
-        ['mweb', 'android'],
-        ['android', 'ios'],
-        ['ios', 'mweb'],
-    ]
+    cookie_path = os.path.join(os.path.dirname(__file__), "cookies.txt")
+    has_cookies = os.path.exists(cookie_path)
 
-    direct_url = None
-    last_exception = None
+    ydl_opts = {
+        'format': target_format,
+        'quiet': True,
+        'skip_download': True,
+        'cachedir': False,
+        'nocheckcertificate': True,
+    }
+    if has_cookies:
+        ydl_opts['cookiefile'] = cookie_path
 
-    for client_list in client_strategies:
-        ydl_opts = {
-            'format': target_format,
-            'quiet': True,
-            'skip_download': True,
-            'cachedir': False,
-            'nocheckcertificate': True,
-            'extractor_args': {'youtube': {'player_client': client_list}},
-        }
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(clean_url, download=False)
-                
-                direct_url = info.get('url')
-                if not direct_url and 'requested_formats' in info and len(info['requested_formats']) > 0:
-                    direct_url = info['requested_formats'][0].get('url')
-                if not direct_url and 'formats' in info and len(info['formats']) > 0:
-                    valid_formats = [f for f in info['formats'] if f.get('url')]
-                    if valid_formats:
-                        direct_url = valid_formats[-1].get('url')
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(clean_url, download=False)
+            
+            direct_url = info.get('url')
+            if not direct_url and 'requested_formats' in info and len(info['requested_formats']) > 0:
+                direct_url = info['requested_formats'][0].get('url')
+            if not direct_url and 'formats' in info and len(info['formats']) > 0:
+                valid_formats = [f for f in info['formats'] if f.get('url')]
+                if valid_formats:
+                    direct_url = valid_formats[-1].get('url')
 
-                if direct_url:
-                    break
-        except Exception as e:
-            last_exception = e
-            continue
+            if not direct_url:
+                raise HTTPException(status_code=500, detail="Could not extract direct stream URL")
 
-    if not direct_url:
-        raise HTTPException(status_code=500, detail=f"Download extraction error: {str(last_exception)}")
-
-    return RedirectResponse(url=direct_url, status_code=302)
+            return RedirectResponse(url=direct_url, status_code=302)
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Download extraction error: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

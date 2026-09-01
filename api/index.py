@@ -6,4 +6,4 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 from main import app
 
-# Vercel Serverless Function Entrypoint v1.1.5 - Priority android_vr client strategy for instant YouTube stream URL extraction
+# Vercel Serverless Function Entrypoint v1.1.6 - Lightweight Single-pass cookie extraction for Render RAM optimization
