@@ -409,18 +409,18 @@ struct ServerSettingsView: View {
             Form {
                 Section(header: Text("Địa chỉ Backend Server hiện tại")) {
                     #if os(iOS)
-                    TextField("https://cookbook-inn-tea-converted.trycloudflare.com", text: $serverAddress)
+                    TextField("https://males-enhancement-revenue-teens.trycloudflare.com", text: $serverAddress)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
                     #else
-                    TextField("https://cookbook-inn-tea-converted.trycloudflare.com", text: $serverAddress)
+                    TextField("https://males-enhancement-revenue-teens.trycloudflare.com", text: $serverAddress)
                         .disableAutocorrection(true)
                     #endif
                 }
                 
                 Section(header: Text("Chọn nhanh Server 24/7 Cloud (Bấm 1-Click)")) {
                     Button(action: {
-                        serverAddress = "https://cookbook-inn-tea-converted.trycloudflare.com"
+                        serverAddress = "https://males-enhancement-revenue-teens.trycloudflare.com"
                     }) {
                         HStack {
                             Image(systemName: "bolt.horizontal.circle.fill")
@@ -428,7 +428,7 @@ struct ServerSettingsView: View {
                             VStack(alignment: .leading) {
                                 Text("🌐 Server 24/7 Cloud (Khuyên dùng)")
                                     .font(.subheadline.bold())
-                                Text("https://cookbook-inn-tea-converted.trycloudflare.com")
+                                Text("https://males-enhancement-revenue-teens.trycloudflare.com")
                                     .font(.caption)
                                     .foregroundColor(.gray)
                             }
