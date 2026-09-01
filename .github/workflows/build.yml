@@ -1,4 +1,4 @@
-name: Build iOS App & Backend
+name: Build Unsigned IPA & Vercel Backend
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   backend-test:
-    name: 🐍 Test Python Backend
+    name: 🐍 Test Python & Vercel Backend
     runs-on: ubuntu-latest
 
     steps:
@@ -26,13 +26,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
 
-      - name: Verify Backend Imports
+      - name: Verify Vercel & FastAPI Entrypoint
         run: |
-          cd backend
-          python -c "import main; print('Backend syntax check passed!')"
+          python -c "import api.index; print('Vercel entrypoint api/index.py verified!')"
 
-  ios-build:
-    name: 📱 Build iOS App (macOS)
+  ios-build-ipa:
+    name: 📱 Build Unsigned .IPA File (macOS)
     runs-on: macos-latest
     needs: backend-test
 
@@ -40,24 +39,24 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Select Xcode
+      - name: Select Xcode Version
         run: sudo xcode-select -s /Applications/Xcode_15.4.app || true
 
-      - name: Verify Xcode Version
-        run: xcodebuild -version
-
-      - name: Create Xcode Project (Swift Package / Xcode CLI)
-        run: |
-          echo "Preparing Xcode build configuration..."
-          mkdir -p build/Payload
-
-      - name: Build iOS App Target
+      - name: Build Executable with Swift PM
         run: |
           cd ios-app/YTMusicPlayer
-          swift build -v || echo "Xcode build step completed"
+          swift build -c release
 
-      - name: Upload Build Artifacts
+      - name: Create Unsigned .IPA Package
+        run: |
+          mkdir -p Payload/YTMusicPlayer.app
+          cp -r ios-app/YTMusicPlayer/.build/release/YTMusicPlayer Payload/YTMusicPlayer.app/
+          cp ios-app/YTMusicPlayer/Info.plist Payload/YTMusicPlayer.app/
+          zip -r YTMusicPlayer-unsigned.ipa Payload
+          echo "IPA generation complete!"
+
+      - name: Upload Unsigned .IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: YTMusicPlayer-iOS-Source
-          path: ios-app/YTMusicPlayer/
+          name: YTMusicPlayer-unsigned-ipa
+          path: YTMusicPlayer-unsigned.ipa
