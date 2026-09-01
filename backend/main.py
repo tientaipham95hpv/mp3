@@ -29,6 +29,21 @@ def read_root():
 def health_check():
     return {"status": "ok", "yt_dlp_version": yt_dlp.version.__version__}
 
+import re
+
+def clean_youtube_url(url: str) -> str:
+    """
+    Extracts video ID from any YouTube URL (watch, shorts, youtu.be, tracking params)
+    and normalizes it to clean watch URL.
+    """
+    pattern = r'(?:v=|\/([0-9A-Za-z_-]{11})|embed\/|youtu\.be\/)([0-9A-Za-z_-]{11})'
+    match = re.search(pattern, url)
+    if match:
+        video_id = match.group(2) if match.group(2) else match.group(1)
+        if video_id:
+            return f"https://www.youtube.com/watch?v={video_id}"
+    return url
+
 @app.get("/api/info")
 def get_video_info(url: str = Query(..., description="YouTube Video URL")):
     """
@@ -37,6 +52,8 @@ def get_video_info(url: str = Query(..., description="YouTube Video URL")):
     """
     if not url:
         raise HTTPException(status_code=400, detail="URL cannot be empty")
+    
+    clean_url = clean_youtube_url(url)
     
     ydl_opts = {
         'quiet': True,
@@ -49,7 +66,7 @@ def get_video_info(url: str = Query(..., description="YouTube Video URL")):
     
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
+            info = ydl.extract_info(clean_url, download=False)
             
             # Duration in seconds
             duration = info.get('duration', 0)
@@ -80,6 +97,8 @@ def download_media(
     if not url:
         raise HTTPException(status_code=400, detail="URL is required")
 
+    clean_url = clean_youtube_url(url)
+
     if media_type == "mp3":
         ydl_opts = {
             'format': 'bestaudio[ext=m4a]/bestaudio/best',
@@ -101,7 +120,7 @@ def download_media(
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
+            info = ydl.extract_info(clean_url, download=False)
             
             direct_url = info.get('url')
             if not direct_url and 'requested_formats' in info and len(info['requested_formats']) > 0:
