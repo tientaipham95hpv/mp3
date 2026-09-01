@@ -11,182 +11,344 @@ struct DownloaderView: View {
     @State private var selectedMediaType: MediaType = .audio
     @State private var selectedQuality: String = "720p"
     @State private var showServerSettings: Bool = false
+    @State private var isAnimatingIcon: Bool = false
     
     @ObservedObject var downloadManager = DownloadManager.shared
     @ObservedObject var apiClient = APIClient.shared
     
-    private var cardBackgroundColor: Color {
-        #if canImport(UIKit)
-        return Color(UIColor.secondarySystemGroupedBackground)
-        #else
-        return Color.gray.opacity(0.15)
-        #endif
+    private var darkBackgroundGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color(red: 0.06, green: 0.05, blue: 0.12),
+                Color(red: 0.02, green: 0.02, blue: 0.05)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
     
+    private var primaryGradient: LinearGradient {
+        LinearGradient(
+            colors: [Color(red: 0.65, green: 0.25, blue: 0.98), Color(red: 0.95, green: 0.20, blue: 0.55)],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Header Banner
-                    VStack(spacing: 8) {
-                        Image(systemName: "arrow.down.circle.fill")
-                            .font(.system(size: 48))
-                            .foregroundColor(.purple)
-                        Text("Tải Nhạc & Video YouTube")
-                            .font(.title2.bold())
-                        Text("Nhập link YouTube để tải MP3 âm thanh hoặc MP4 video xem offline")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
+            ZStack {
+                darkBackgroundGradient.ignoresSafeArea()
+                
+                // Ambient Glow Orbs
+                VStack {
+                    HStack {
+                        Circle()
+                            .fill(Color.purple.opacity(0.25))
+                            .frame(width: 250, height: 250)
+                            .blur(radius: 70)
+                            .offset(x: -80, y: -60)
+                        Spacer()
                     }
-                    .padding(.top, 12)
-                    
-                    // URL Input Section
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Liên kết YouTube")
-                            .font(.headline)
-                        
-                        HStack {
-                            Image(systemName: "link")
-                                .foregroundColor(.gray)
-                            
-                            #if os(iOS)
-                            TextField("Dán đường dẫn YouTube tại đây...", text: $youtubeURL)
-                                .autocapitalization(.none)
-                                .disableAutocorrection(true)
-                            #else
-                            TextField("Dán đường dẫn YouTube tại đây...", text: $youtubeURL)
-                                .disableAutocorrection(true)
-                            #endif
-                            
-                            if !youtubeURL.isEmpty {
-                                Button(action: { youtubeURL = "" }) {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(.gray)
-                                }
-                            }
-                            
-                            Button(action: pasteFromClipboard) {
-                                Text("Dán")
-                                    .font(.caption.bold())
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(Color.purple.opacity(0.15))
-                                    .foregroundColor(.purple)
-                                    .cornerRadius(8)
-                            }
-                        }
-                        .padding(12)
-                        .background(cardBackgroundColor)
-                        .cornerRadius(12)
-                    }
-                    .padding(.horizontal)
-                    
-                    // Options Selection Section
-                    VStack(alignment: .leading, spacing: 14) {
-                        Text("Định dạng & Chất lượng")
-                            .font(.headline)
-                        
-                        // Media Type Picker (MP3 vs MP4)
-                        Picker("Định dạng", selection: $selectedMediaType) {
-                            Text("🎵 MP3 (Chỉ âm thanh)").tag(MediaType.audio)
-                            Text("🎬 MP4 (Video)").tag(MediaType.video)
-                        }
-                        .pickerStyle(SegmentedPickerStyle())
-                        
-                        if selectedMediaType == .video {
-                            HStack {
-                                Text("Chất lượng Video:")
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
-                                Spacer()
-                                Picker("Chất lượng", selection: $selectedQuality) {
-                                    Text("360p").tag("360p")
-                                    Text("720p HD").tag("720p")
-                                    Text("1080p Full HD").tag("1080p")
-                                }
-                                .pickerStyle(MenuPickerStyle())
-                            }
-                            .padding(.top, 4)
-                        }
-                    }
-                    .padding(16)
-                    .background(cardBackgroundColor)
-                    .cornerRadius(12)
-                    .padding(.horizontal)
-                    
-                    // Download Action Button
-                    Button(action: startDownload) {
-                        HStack {
-                            Image(systemName: "arrow.down.to.line.compact")
-                            Text("Bắt đầu Tải về")
-                                .bold()
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(youtubeURL.isEmpty ? Color.gray.opacity(0.5) : Color.purple)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                    }
-                    .disabled(youtubeURL.isEmpty)
-                    .padding(.horizontal)
-                    
-                    // Status & Progress Card
-                    if case .downloading(let progress) = downloadManager.state {
-                        VStack(spacing: 12) {
-                            Text("Đang tải dữ liệu...")
-                                .font(.headline)
-                            ProgressView(value: progress)
-                                .accentColor(.purple)
-                            Text("\(Int(progress * 100))%")
-                                .font(.caption.bold())
-                                .foregroundColor(.purple)
-                        }
-                        .padding(16)
-                        .background(cardBackgroundColor)
-                        .cornerRadius(12)
-                        .padding(.horizontal)
-                    } else if case .failed(let error) = downloadManager.state {
-                        VStack(spacing: 8) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.red)
-                            Text("Lỗi Tải Xuống")
-                                .font(.headline).foregroundColor(.red)
-                            Text(error)
-                                .font(.caption)
-                                .foregroundColor(.gray)
-                                .multilineTextAlignment(.center)
-                        }
-                        .padding(16)
-                        .background(Color.red.opacity(0.1))
-                        .cornerRadius(12)
-                        .padding(.horizontal)
-                    } else if case .completed(let item) = downloadManager.state {
-                        VStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                            Text("Tải về Thành công!")
-                                .font(.headline).foregroundColor(.green)
-                            Text(item.title)
-                                .font(.caption.bold())
-                                .lineLimit(1)
-                        }
-                        .padding(16)
-                        .background(Color.green.opacity(0.1))
-                        .cornerRadius(12)
-                        .padding(.horizontal)
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Circle()
+                            .fill(Color.indigo.opacity(0.25))
+                            .frame(width: 280, height: 280)
+                            .blur(radius: 80)
+                            .offset(x: 80, y: 80)
                     }
                 }
-                .padding(.bottom, 24)
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 24) {
+                        
+                        // Hero Header Banner
+                        VStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(primaryGradient)
+                                    .frame(width: 84, height: 84)
+                                    .shadow(color: Color(red: 0.65, green: 0.25, blue: 0.98).opacity(0.5), radius: 20, x: 0, y: 10)
+                                    .scaleEffect(isAnimatingIcon ? 1.05 : 0.95)
+                                    .animation(Animation.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: isAnimatingIcon)
+                                
+                                Image(systemName: "arrow.down.to.line.circle.fill")
+                                    .font(.system(size: 44, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
+                            .padding(.top, 16)
+                            .onAppear { isAnimatingIcon = true }
+                            
+                            VStack(spacing: 6) {
+                                Text("Tải Nhạc & Video YouTube")
+                                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                                    .foregroundColor(.white)
+                                
+                                HStack(spacing: 6) {
+                                    Circle()
+                                        .fill(Color.green)
+                                        .frame(width: 8, height: 8)
+                                    Text("Máy chủ 24/7 Cloud Sẵn sàng")
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundColor(Color.green.opacity(0.9))
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 5)
+                                .background(Color.green.opacity(0.12))
+                                .cornerRadius(20)
+                            }
+                        }
+                        
+                        // Input Card Container
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("Dán liên kết YouTube")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color.white.opacity(0.8))
+                                .padding(.leading, 4)
+                            
+                            HStack(spacing: 10) {
+                                Image(systemName: "link.circle.fill")
+                                    .font(.system(size: 22))
+                                    .foregroundColor(Color(red: 0.75, green: 0.35, blue: 0.98))
+                                
+                                #if os(iOS)
+                                TextField("Dán link YouTube tại đây...", text: $youtubeURL)
+                                    .autocapitalization(.none)
+                                    .disableAutocorrection(true)
+                                    .foregroundColor(.white)
+                                    .accentColor(.purple)
+                                #else
+                                TextField("Dán link YouTube tại đây...", text: $youtubeURL)
+                                    .disableAutocorrection(true)
+                                    .foregroundColor(.white)
+                                    .accentColor(.purple)
+                                #endif
+                                
+                                if !youtubeURL.isEmpty {
+                                    Button(action: { youtubeURL = "" }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                                
+                                Button(action: pasteFromClipboard) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "doc.on.clipboard.fill")
+                                            .font(.caption)
+                                        Text("Dán")
+                                            .font(.system(size: 13, weight: .bold))
+                                    }
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 9)
+                                    .background(primaryGradient)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(12)
+                                    .shadow(color: Color.purple.opacity(0.4), radius: 6, x: 0, y: 3)
+                                }
+                            }
+                            .padding(14)
+                            .background(Color.white.opacity(0.07))
+                            .cornerRadius(16)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                            )
+                        }
+                        .padding(.horizontal)
+                        
+                        // Media Type & Quality Selector
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Định dạng xuất file")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color.white.opacity(0.8))
+                                .padding(.leading, 4)
+                            
+                            HStack(spacing: 12) {
+                                // MP3 Pill
+                                Button(action: { selectedMediaType = .audio }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "music.note")
+                                            .font(.system(size: 18, weight: .semibold))
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("MP3 Âm thanh")
+                                                .font(.system(size: 14, weight: .bold))
+                                            Text("Chất lượng cao 320kbps")
+                                                .font(.system(size: 10))
+                                                .opacity(0.8)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 14)
+                                    .background(
+                                        selectedMediaType == .audio
+                                        ? AnyView(primaryGradient)
+                                        : AnyView(Color.white.opacity(0.06))
+                                    )
+                                    .foregroundColor(.white)
+                                    .cornerRadius(16)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(selectedMediaType == .audio ? Color.clear : Color.white.opacity(0.1), lineWidth: 1)
+                                    )
+                                }
+                                
+                                // MP4 Pill
+                                Button(action: { selectedMediaType = .video }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "film.fill")
+                                            .font(.system(size: 18, weight: .semibold))
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("MP4 Video")
+                                                .font(.system(size: 14, weight: .bold))
+                                            Text("Hình ảnh HD Offline")
+                                                .font(.system(size: 10))
+                                                .opacity(0.8)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 14)
+                                    .background(
+                                        selectedMediaType == .video
+                                        ? AnyView(primaryGradient)
+                                        : AnyView(Color.white.opacity(0.06))
+                                    )
+                                    .foregroundColor(.white)
+                                    .cornerRadius(16)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(selectedMediaType == .video ? Color.clear : Color.white.opacity(0.1), lineWidth: 1)
+                                    )
+                                }
+                            }
+                            
+                            if selectedMediaType == .video {
+                                HStack {
+                                    Text("Chất lượng Video HD:")
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundColor(Color.white.opacity(0.7))
+                                    Spacer()
+                                    Picker("Chất lượng", selection: $selectedQuality) {
+                                        Text("360p Tiết kiệm").tag("360p")
+                                        Text("720p HD Chuẩn").tag("720p")
+                                        Text("1080p Full HD").tag("1080p")
+                                    }
+                                    .pickerStyle(MenuPickerStyle())
+                                    .accentColor(.purple)
+                                }
+                                .padding(12)
+                                .background(Color.white.opacity(0.05))
+                                .cornerRadius(12)
+                            }
+                        }
+                        .padding(.horizontal)
+                        
+                        // Download Action Button
+                        Button(action: startDownload) {
+                            HStack(spacing: 10) {
+                                Image(systemName: "arrow.down.circle.fill")
+                                    .font(.system(size: 22))
+                                Text("Bắt đầu Tải về Tức thì")
+                                    .font(.system(size: 16, weight: .bold))
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(
+                                youtubeURL.isEmpty
+                                ? LinearGradient(colors: [Color.gray.opacity(0.3), Color.gray.opacity(0.2)], startPoint: .leading, endPoint: .trailing)
+                                : primaryGradient
+                            )
+                            .foregroundColor(.white)
+                            .cornerRadius(18)
+                            .shadow(color: youtubeURL.isEmpty ? Color.clear : Color.purple.opacity(0.5), radius: 12, x: 0, y: 6)
+                        }
+                        .disabled(youtubeURL.isEmpty)
+                        .padding(.horizontal)
+                        
+                        // Downloading Progress Card
+                        if case .downloading(let progress) = downloadManager.state {
+                            VStack(spacing: 14) {
+                                HStack {
+                                    Image(systemName: "arrow.triangle.2.circlepath")
+                                        .font(.title3)
+                                        .foregroundColor(.purple)
+                                    Text("Đang bóc tách & tải dữ liệu...")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                    Text("\(Int(progress * 100))%")
+                                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                        .foregroundColor(Color(red: 0.75, green: 0.35, blue: 0.98))
+                                }
+                                
+                                GeometryReader { geometry in
+                                    ZStack(alignment: .leading) {
+                                        Capsule()
+                                            .fill(Color.white.opacity(0.1))
+                                            .frame(height: 8)
+                                        
+                                        Capsule()
+                                            .fill(primaryGradient)
+                                            .frame(width: max(geometry.size.width * CGFloat(progress), 12), height: 8)
+                                    }
+                                }
+                                .frame(height: 8)
+                            }
+                            .padding(18)
+                            .background(Color.white.opacity(0.08))
+                            .cornerRadius(20)
+                            .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.purple.opacity(0.4), lineWidth: 1))
+                            .padding(.horizontal)
+                        } else if case .failed(let error) = downloadManager.state {
+                            VStack(spacing: 10) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.red)
+                                Text("Lỗi Tải Xuống")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.red)
+                                Text(error)
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color.white.opacity(0.7))
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(18)
+                            .background(Color.red.opacity(0.15))
+                            .cornerRadius(20)
+                            .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.red.opacity(0.3), lineWidth: 1))
+                            .padding(.horizontal)
+                        } else if case .completed(let item) = downloadManager.state {
+                            VStack(spacing: 10) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 36))
+                                    .foregroundColor(.green)
+                                Text("Tải về Thành công!")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.green)
+                                Text(item.title)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(.white)
+                                    .lineLimit(1)
+                            }
+                            .padding(18)
+                            .background(Color.green.opacity(0.15))
+                            .cornerRadius(20)
+                            .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.green.opacity(0.3), lineWidth: 1))
+                            .padding(.horizontal)
+                        }
+                    }
+                    .padding(.bottom, 100)
+                }
             }
-            .navigationTitle("Tải Nhạc")
+            .navigationTitle("Khám Phá & Tải Nhạc")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showServerSettings = true }) {
-                        Image(systemName: "gearshape.fill")
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.purple)
                     }
                 }
@@ -195,7 +357,8 @@ struct DownloaderView: View {
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button(action: { showServerSettings = true }) {
-                        Image(systemName: "gearshape.fill")
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.purple)
                     }
                 }

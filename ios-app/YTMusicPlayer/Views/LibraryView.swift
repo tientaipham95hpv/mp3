@@ -15,12 +15,23 @@ struct LibraryView: View {
     @State private var selectedVideoItem: MediaItem? = nil
     @State private var showAudioPlayerModal: Bool = false
     
-    private var cardBackgroundColor: Color {
-        #if canImport(UIKit)
-        return Color(UIColor.secondarySystemGroupedBackground)
-        #else
-        return Color.gray.opacity(0.15)
-        #endif
+    private var darkBackgroundGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color(red: 0.06, green: 0.05, blue: 0.12),
+                Color(red: 0.02, green: 0.02, blue: 0.05)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+    
+    private var primaryGradient: LinearGradient {
+        LinearGradient(
+            colors: [Color(red: 0.65, green: 0.25, blue: 0.98), Color(red: 0.95, green: 0.20, blue: 0.55)],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
     }
     
     var filteredItems: [MediaItem] {
@@ -33,63 +44,106 @@ struct LibraryView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // Media Filter Picker
-                Picker("Phân loại", selection: $selectedSegment) {
-                    Text("🎵 Âm thanh (\(audioCount))").tag(MediaType.audio)
-                    Text("🎬 Video (\(videoCount))").tag(MediaType.video)
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .padding()
+            ZStack {
+                darkBackgroundGradient.ignoresSafeArea()
                 
-                // Search Bar
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.gray)
-                    TextField("Tìm kiếm bài hát / video...", text: $searchText)
-                    if !searchText.isEmpty {
-                        Button(action: { searchText = "" }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.gray)
+                VStack(spacing: 16) {
+                    // Category Selector Pills
+                    HStack(spacing: 12) {
+                        Button(action: { selectedSegment = .audio }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "music.note")
+                                Text("Âm thanh (\(audioCount))")
+                                    .font(.system(size: 14, weight: .bold))
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(selectedSegment == .audio ? AnyView(primaryGradient) : AnyView(Color.white.opacity(0.06)))
+                            .foregroundColor(.white)
+                            .cornerRadius(14)
+                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(selectedSegment == .audio ? Color.clear : Color.white.opacity(0.1), lineWidth: 1))
+                        }
+                        
+                        Button(action: { selectedSegment = .video }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "film.fill")
+                                Text("Video (\(videoCount))")
+                                    .font(.system(size: 14, weight: .bold))
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(selectedSegment == .video ? AnyView(primaryGradient) : AnyView(Color.white.opacity(0.06)))
+                            .foregroundColor(.white)
+                            .cornerRadius(14)
+                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(selectedSegment == .video ? Color.clear : Color.white.opacity(0.1), lineWidth: 1))
                         }
                     }
-                }
-                .padding(10)
-                .background(cardBackgroundColor)
-                .cornerRadius(10)
-                .padding(.horizontal)
-                .padding(.bottom, 8)
-                
-                // Media List
-                if filteredItems.isEmpty {
-                    VStack(spacing: 12) {
-                        Spacer()
-                        Image(systemName: selectedSegment == .audio ? "music.note.house" : "video.slash")
-                            .font(.system(size: 56))
-                            .foregroundColor(.gray.opacity(0.6))
-                        Text(emptyStateText)
-                            .font(.headline)
-                            .foregroundColor(.gray)
-                        Text("Hãy qua tab Tải về để dán link YouTube và tải file offline.")
-                            .font(.subheadline)
-                            .foregroundColor(.gray.opacity(0.8))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 32)
-                        Spacer()
-                    }
-                } else {
-                    List {
-                        ForEach(filteredItems) { item in
-                            MediaRowView(item: item) {
-                                handleItemTap(item)
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                    
+                    // Glassmorphic Search Bar
+                    HStack(spacing: 10) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(Color.white.opacity(0.5))
+                        
+                        TextField("Tìm kiếm tên bài hát, ca sĩ...", text: $searchText)
+                            .foregroundColor(.white)
+                            .accentColor(.purple)
+                        
+                        if !searchText.isEmpty {
+                            Button(action: { searchText = "" }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.gray)
                             }
                         }
-                        .onDelete(perform: deleteItems)
                     }
-                    .listStyle(PlainListStyle())
+                    .padding(12)
+                    .background(Color.white.opacity(0.07))
+                    .cornerRadius(14)
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.1), lineWidth: 1))
+                    .padding(.horizontal)
+                    
+                    // Media Items List
+                    if filteredItems.isEmpty {
+                        VStack(spacing: 14) {
+                            Spacer()
+                            ZStack {
+                                Circle()
+                                    .fill(Color.white.opacity(0.05))
+                                    .frame(width: 100, height: 100)
+                                Image(systemName: selectedSegment == .audio ? "music.note.house.fill" : "video.slash.fill")
+                                    .font(.system(size: 44))
+                                    .foregroundColor(Color.white.opacity(0.4))
+                            }
+                            Text(emptyStateText)
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.white)
+                            Text("Nhấp vào tab Tải về để dán link YouTube và lưu file vào máy.")
+                                .font(.system(size: 13))
+                                .foregroundColor(Color.white.opacity(0.6))
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 36)
+                            Spacer()
+                        }
+                    } else {
+                        ScrollView(showsIndicators: false) {
+                            LazyVStack(spacing: 12) {
+                                ForEach(filteredItems) { item in
+                                    MediaCardRowView(
+                                        item: item,
+                                        isPlaying: audioPlayerManager.currentTrack?.id == item.id && audioPlayerManager.isPlaying,
+                                        onTap: { handleItemTap(item) },
+                                        onDelete: { downloadManager.deleteMediaItem(item) }
+                                    )
+                                }
+                            }
+                            .padding(.horizontal)
+                            .padding(.bottom, 120)
+                        }
+                    }
                 }
             }
-            .navigationTitle("Thư viện Offline")
+            .navigationTitle("Thư Viện Offline")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -114,7 +168,7 @@ struct LibraryView: View {
     
     private var emptyStateText: String {
         if !searchText.isEmpty {
-            return "Không tìm thấy kết quả phù hợp"
+            return "Không tìm thấy bài hát nào"
         }
         return selectedSegment == .audio ? "Chưa có bài hát MP3 nào" : "Chưa có video MP4 nào"
     }
@@ -128,60 +182,93 @@ struct LibraryView: View {
             selectedVideoItem = item
         }
     }
-    
-    private func deleteItems(at offsets: IndexSet) {
-        let itemsToDelete = offsets.map { filteredItems[$0] }
-        for item in itemsToDelete {
-            downloadManager.deleteMediaItem(item)
-        }
-    }
 }
 
-struct MediaRowView: View {
+struct MediaCardRowView: View {
     let item: MediaItem
+    let isPlaying: Bool
     let onTap: () -> Void
+    let onDelete: () -> Void
     
+    private var primaryGradient: LinearGradient {
+        LinearGradient(
+            colors: [Color(red: 0.65, green: 0.25, blue: 0.98), Color(red: 0.95, green: 0.20, blue: 0.55)],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 12) {
-                // Icon / Art
+            HStack(spacing: 14) {
+                // Art Thumbnail with Soundwave/Icon overlay
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(item.mediaType == .audio ? Color.purple.opacity(0.15) : Color.blue.opacity(0.15))
-                    Image(systemName: item.mediaType.iconName)
-                        .foregroundColor(item.mediaType == .audio ? .purple : .blue)
-                        .font(.title3)
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(
+                            item.mediaType == .audio
+                            ? LinearGradient(colors: [Color.purple.opacity(0.4), Color.indigo.opacity(0.6)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            : LinearGradient(colors: [Color.blue.opacity(0.4), Color.teal.opacity(0.6)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        )
+                    
+                    if isPlaying {
+                        Image(systemName: "waveform")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(.white)
+                    } else {
+                        Image(systemName: item.mediaType == .audio ? "music.note" : "play.fill")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
                 }
-                .frame(width: 48, height: 48)
+                .frame(width: 52, height: 52)
+                .shadow(color: item.mediaType == .audio ? Color.purple.opacity(0.3) : Color.blue.opacity(0.3), radius: 6, x: 0, y: 3)
                 
-                // Title & Artist
+                // Track Info
                 VStack(alignment: .leading, spacing: 4) {
                     Text(item.title)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.primary)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(.white)
                         .lineLimit(1)
                     
                     HStack(spacing: 6) {
                         Text(item.artist)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            .font(.system(size: 12))
+                            .foregroundColor(Color.white.opacity(0.6))
                             .lineLimit(1)
+                        
                         Text("•")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            .font(.system(size: 10))
+                            .foregroundColor(Color.white.opacity(0.4))
+                        
                         Text(item.formattedDuration)
-                            .font(.caption.monospacedDigit())
-                            .foregroundColor(.secondary)
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundColor(Color(red: 0.75, green: 0.35, blue: 0.98))
                     }
                 }
                 
                 Spacer()
                 
-                Image(systemName: item.mediaType == .audio ? "play.circle.fill" : "play.rectangle.fill")
-                    .font(.title2)
-                    .foregroundColor(item.mediaType == .audio ? .purple : .blue)
+                // Play Action Circle Button
+                Button(action: onTap) {
+                    ZStack {
+                        Circle()
+                            .fill(isPlaying ? primaryGradient : LinearGradient(colors: [Color.white.opacity(0.15)], startPoint: .leading, endPoint: .trailing))
+                            .frame(width: 38, height: 38)
+                        
+                        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                            .offset(x: isPlaying ? 0 : 1)
+                    }
+                }
             }
-            .padding(.vertical, 4)
+            .padding(12)
+            .background(Color.white.opacity(isPlaying ? 0.1 : 0.06))
+            .cornerRadius(18)
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(isPlaying ? Color.purple.opacity(0.6) : Color.white.opacity(0.08), lineWidth: 1)
+            )
         }
     }
 }
