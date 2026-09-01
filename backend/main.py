@@ -9,6 +9,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse, RedirectResponse
 import yt_dlp
 
+# Detect PythonAnywhere environment and set required proxy
+is_pythonanywhere = "PYTHONANYWHERE_DOMAIN" in os.environ or os.path.exists("/home/augustvn") or "pythonanywhere" in os.environ.get("SERVER_SOFTWARE", "")
+if is_pythonanywhere:
+    proxy_url = "http://proxy.server:3128"
+    os.environ["HTTP_PROXY"] = proxy_url
+    os.environ["HTTPS_PROXY"] = proxy_url
+    os.environ["http_proxy"] = proxy_url
+    os.environ["https_proxy"] = proxy_url
+
 app = FastAPI(
     title="YouTube Audio/Video Extractor API for iOS App",
     description="Backend microservice using yt-dlp to extract MP3 & MP4 from YouTube links",
@@ -64,6 +73,8 @@ def get_video_info(url: str = Query(..., description="YouTube Video URL")):
         'nocheckcertificate': True,
         'extractor_args': {'youtube': {'player_client': ['android_vr', 'android']}},
     }
+    if is_pythonanywhere:
+        ydl_opts['proxy'] = "http://proxy.server:3128"
     
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -83,21 +94,30 @@ def get_video_info(url: str = Query(..., description="YouTube Video URL")):
         try:
             encoded_url = urllib.parse.quote(clean_url, safe='')
             oembed_url = f"https://www.youtube.com/oembed?url={encoded_url}&format=json"
-            req = urllib.request.Request(oembed_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
-            with urllib.request.urlopen(req, timeout=5) as response:
-                data = json.loads(response.read().decode('utf-8'))
-                
-                vid_match = re.search(r'v=([0-9A-Za-z_-]{11})', clean_url)
-                video_id = vid_match.group(1) if vid_match else "unknown"
-                
-                return {
-                    "id": video_id,
-                    "title": data.get('title', 'YouTube Video'),
-                    "artist": data.get('author_name', 'YouTube Artist'),
-                    "duration": 0.0,
-                    "thumbnail": data.get('thumbnail_url'),
-                    "webpage_url": clean_url,
-                }
+            
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+            if is_pythonanywhere:
+                proxy_handler = urllib.request.ProxyHandler({'http': 'http://proxy.server:3128', 'https': 'http://proxy.server:3128'})
+                opener = urllib.request.build_opener(proxy_handler)
+                req = urllib.request.Request(oembed_url, headers=headers)
+                response = opener.open(req, timeout=5)
+            else:
+                req = urllib.request.Request(oembed_url, headers=headers)
+                response = urllib.request.urlopen(req, timeout=5)
+
+            data = json.loads(response.read().decode('utf-8'))
+            
+            vid_match = re.search(r'v=([0-9A-Za-z_-]{11})', clean_url)
+            video_id = vid_match.group(1) if vid_match else "unknown"
+            
+            return {
+                "id": video_id,
+                "title": data.get('title', 'YouTube Video'),
+                "artist": data.get('author_name', 'YouTube Artist'),
+                "duration": 0.0,
+                "thumbnail": data.get('thumbnail_url'),
+                "webpage_url": clean_url,
+            }
         except Exception as e2:
             raise HTTPException(status_code=400, detail=f"Error extracting video info: {str(e2)}")
 
@@ -123,10 +143,10 @@ def download_media(
         'skip_download': True,
         'cachedir': False,
         'nocheckcertificate': True,
-        'remote_components': ['ejs:github'],
-        'js_runtimes': {'node': {}},
         'extractor_args': {'youtube': {'player_client': ['android_vr', 'android']}},
     }
+    if is_pythonanywhere:
+        ydl_opts['proxy'] = "http://proxy.server:3128"
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
