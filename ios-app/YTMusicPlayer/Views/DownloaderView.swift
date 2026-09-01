@@ -235,42 +235,26 @@ struct ServerSettingsView: View {
             Form {
                 Section(header: Text("Địa chỉ Backend Server hiện tại")) {
                     #if os(iOS)
-                    TextField("http://192.168.2.92:8000", text: $serverAddress)
+                    TextField("https://upgrade-patches-spiritual-editing.trycloudflare.com", text: $serverAddress)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
                     #else
-                    TextField("http://192.168.2.92:8000", text: $serverAddress)
+                    TextField("https://upgrade-patches-spiritual-editing.trycloudflare.com", text: $serverAddress)
                         .disableAutocorrection(true)
                     #endif
                 }
                 
-                Section(header: Text("Chọn nhanh Server có sẵn (Bấm 1-Click)")) {
+                Section(header: Text("Chọn nhanh Server 24/7 Cloud (Bấm 1-Click)")) {
                     Button(action: {
-                        serverAddress = "https://conclusion-moment-wires-pmc.trycloudflare.com"
+                        serverAddress = "https://upgrade-patches-spiritual-editing.trycloudflare.com"
                     }) {
                         HStack {
                             Image(systemName: "bolt.horizontal.circle.fill")
                                 .foregroundColor(.green)
                             VStack(alignment: .leading) {
-                                Text("🌐 Dùng Cloudflare Tunnel (Khuyên dùng)")
+                                Text("🌐 Server 24/7 Cloud (Khuyên dùng)")
                                     .font(.subheadline.bold())
-                                Text("https://conclusion-moment-wires-pmc.trycloudflare.com")
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
-                            }
-                        }
-                    }
-                    
-                    Button(action: {
-                        serverAddress = "http://192.168.2.92:8000"
-                    }) {
-                        HStack {
-                            Image(systemName: "wifi.circle.fill")
-                                .foregroundColor(.blue)
-                            VStack(alignment: .leading) {
-                                Text("🏠 Dùng Máy tính Local (Cùng Wifi)")
-                                    .font(.subheadline.bold())
-                                Text("http://192.168.2.92:8000")
+                                Text("https://upgrade-patches-spiritual-editing.trycloudflare.com")
                                     .font(.caption)
                                     .foregroundColor(.gray)
                             }
