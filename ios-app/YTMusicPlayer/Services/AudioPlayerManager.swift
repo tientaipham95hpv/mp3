@@ -12,6 +12,11 @@ public class AudioPlayerManager: ObservableObject {
     @Published public var duration: Double = 0.0
     @Published public var playlist: [MediaItem] = []
     
+    public var progress: Double {
+        guard duration > 0 else { return 0.0 }
+        return min(max(currentTime / duration, 0.0), 1.0)
+    }
+    
     private var player: AVPlayer?
     private var timeObserverToken: Any?
     

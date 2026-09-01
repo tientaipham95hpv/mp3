@@ -18,6 +18,11 @@ struct MiniPlayerView: View {
         )
     }
     
+    private var progressRatio: CGFloat {
+        guard playerManager.duration > 0 else { return 0.0 }
+        return CGFloat(min(max(playerManager.currentTime / playerManager.duration, 0.0), 1.0))
+    }
+    
     var body: some View {
         if let track = playerManager.currentTrack, track.mediaType == .audio {
             VStack(spacing: 0) {
@@ -28,7 +33,7 @@ struct MiniPlayerView: View {
                             .fill(Color.white.opacity(0.1))
                         Rectangle()
                             .fill(primaryGradient)
-                            .frame(width: max(geometry.size.width * CGFloat(playerManager.progress), 4))
+                            .frame(width: max(geometry.size.width * progressRatio, 4))
                     }
                 }
                 .frame(height: 3)
