@@ -24,14 +24,14 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r backend/requirements.txt
+          pip install -r requirements.txt
 
       - name: Verify Vercel & FastAPI Entrypoint
         run: |
           python -c "import api.index; print('Vercel entrypoint api/index.py verified!')"
 
   ios-build-ipa:
-    name: 📱 Build Unsigned .IPA File (macOS)
+    name: 📱 Build Valid iOS ARM64 .IPA File (macOS)
     runs-on: macos-latest
     needs: backend-test
 
@@ -42,18 +42,30 @@ jobs:
       - name: Select Xcode Version
         run: sudo xcode-select -s /Applications/Xcode_15.4.app || true
 
-      - name: Build Executable with Swift PM
-        run: |
-          cd ios-app/YTMusicPlayer
-          swift build -c release
-
-      - name: Create Unsigned .IPA Package
+      - name: Create App Payload Directory
         run: |
           mkdir -p Payload/YTMusicPlayer.app
-          cp -r ios-app/YTMusicPlayer/.build/release/YTMusicPlayer Payload/YTMusicPlayer.app/
-          cp ios-app/YTMusicPlayer/Info.plist Payload/YTMusicPlayer.app/
+
+      - name: Compile Native iOS ARM64 Binary
+        run: |
+          SDK_PATH=$(xcrun --sdk iphoneos --show-sdk-path)
+          xcrun --sdk iphoneos swiftc \
+            -sdk "$SDK_PATH" \
+            -target arm64-apple-ios15.0 \
+            -parse-as-library \
+            -O \
+            ios-app/YTMusicPlayer/App/*.swift \
+            ios-app/YTMusicPlayer/Models/*.swift \
+            ios-app/YTMusicPlayer/Services/*.swift \
+            ios-app/YTMusicPlayer/Views/*.swift \
+            ios-app/YTMusicPlayer/Views/Components/*.swift \
+            -o Payload/YTMusicPlayer.app/YTMusicPlayer
+
+      - name: Package Valid IPA Bundle
+        run: |
+          cp ios-app/YTMusicPlayer/Info.plist Payload/YTMusicPlayer.app/Info.plist
           zip -r YTMusicPlayer-unsigned.ipa Payload
-          echo "IPA generation complete!"
+          echo "Valid iOS ARM64 IPA packaging complete!"
 
       - name: Upload Unsigned .IPA Artifact
         uses: actions/upload-artifact@v4
