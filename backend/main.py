@@ -71,7 +71,7 @@ def get_video_info(url: str = Query(..., description="YouTube Video URL")):
         'skip_download': True,
         'cachedir': False,
         'nocheckcertificate': True,
-        'extractor_args': {'youtube': {'player_client': ['android_vr', 'android']}},
+        'extractor_args': {'youtube': {'player_client': ['android']}},
     }
     if is_pythonanywhere:
         ydl_opts['proxy'] = "http://proxy.server:3128"
@@ -143,7 +143,7 @@ def download_media(
         'skip_download': True,
         'cachedir': False,
         'nocheckcertificate': True,
-        'extractor_args': {'youtube': {'player_client': ['android_vr', 'android']}},
+        'extractor_args': {'youtube': {'player_client': ['android']}},
     }
     if is_pythonanywhere:
         ydl_opts['proxy'] = "http://proxy.server:3128"
@@ -190,7 +190,7 @@ try:
         clean_url = clean_youtube_url(url)
         ydl_opts = {
             'quiet': True, 'no_warnings': True, 'skip_download': True, 'cachedir': False, 'nocheckcertificate': True,
-            'extractor_args': {'youtube': {'player_client': ['android_vr', 'android']}}
+            'extractor_args': {'youtube': {'player_client': ['android']}}
         }
         if is_pythonanywhere:
             ydl_opts['proxy'] = "http://proxy.server:3128"
@@ -241,7 +241,7 @@ try:
         target_format = 'ba/b' if media_type == "mp3" else 'b/ba'
         ydl_opts = {
             'format': target_format, 'quiet': True, 'skip_download': True, 'cachedir': False, 'nocheckcertificate': True,
-            'extractor_args': {'youtube': {'player_client': ['android_vr', 'android']}}
+            'extractor_args': {'youtube': {'player_client': ['android']}}
         }
         if is_pythonanywhere:
             ydl_opts['proxy'] = "http://proxy.server:3128"
