@@ -62,7 +62,7 @@ def get_video_info(url: str = Query(..., description="YouTube Video URL")):
         'skip_download': True,
         'cachedir': False,
         'nocheckcertificate': True,
-        'extractor_args': {'youtube': {'player_client': ['android', 'ios']}},
+        'extractor_args': {'youtube': {'player_client': ['mweb', 'android']}},
     }
     
     try:
@@ -115,41 +115,43 @@ def download_media(
         raise HTTPException(status_code=400, detail="URL is required")
 
     clean_url = clean_youtube_url(url)
+    target_format = 'ba/b' if media_type == "mp3" else 'b/ba'
 
-    if media_type == "mp3":
+    client_strategies = [
+        ['mweb', 'android'],
+        ['android', 'ios'],
+        ['ios', 'mweb'],
+        ['web', 'android'],
+    ]
+
+    direct_url = None
+    last_exception = None
+
+    for client_list in client_strategies:
         ydl_opts = {
-            'format': 'ba/b',
+            'format': target_format,
             'quiet': True,
             'skip_download': True,
             'cachedir': False,
             'nocheckcertificate': True,
-            'extractor_args': {'youtube': {'player_client': ['android', 'ios']}},
+            'extractor_args': {'youtube': {'player_client': client_list}},
         }
-    else:  # mp4
-        ydl_opts = {
-            'format': 'b/ba',
-            'quiet': True,
-            'skip_download': True,
-            'cachedir': False,
-            'nocheckcertificate': True,
-            'extractor_args': {'youtube': {'player_client': ['android', 'ios']}},
-        }
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(clean_url, download=False)
+                direct_url = info.get('url')
+                if not direct_url and 'requested_formats' in info and len(info['requested_formats']) > 0:
+                    direct_url = info['requested_formats'][0].get('url')
+                if direct_url:
+                    break
+        except Exception as e:
+            last_exception = e
+            continue
 
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(clean_url, download=False)
-            
-            direct_url = info.get('url')
-            if not direct_url and 'requested_formats' in info and len(info['requested_formats']) > 0:
-                direct_url = info['requested_formats'][0].get('url')
+    if not direct_url:
+        raise HTTPException(status_code=500, detail=f"Download extraction error: {str(last_exception)}")
 
-            if not direct_url:
-                raise HTTPException(status_code=500, detail="Could not extract direct stream URL")
-
-            return RedirectResponse(url=direct_url, status_code=302)
-            
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Download extraction error: {str(e)}")
+    return RedirectResponse(url=direct_url, status_code=302)
 
 if __name__ == "__main__":
     import uvicorn
