@@ -123,6 +123,8 @@ def download_media(
         'skip_download': True,
         'cachedir': False,
         'nocheckcertificate': True,
+        'remote_components': ['ejs:github'],
+        'js_runtimes': {'node': {}},
         'extractor_args': {'youtube': {'player_client': ['android_vr', 'android']}},
     }
 
