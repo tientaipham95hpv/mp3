@@ -44,6 +44,7 @@ def get_video_info(url: str = Query(..., description="YouTube Video URL")):
         'skip_download': True,
         'cachedir': False,
         'nocheckcertificate': True,
+        'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
     }
     
     try:
