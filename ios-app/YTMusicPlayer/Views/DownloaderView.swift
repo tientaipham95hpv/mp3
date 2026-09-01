@@ -398,3 +398,72 @@ struct DownloaderView: View {
         downloadManager.startDownload(youtubeURL: youtubeURL, mediaType: selectedMediaType, quality: selectedQuality)
     }
 }
+
+struct ServerSettingsView: View {
+    @Environment(\.dismiss) var dismiss
+    @ObservedObject var apiClient = APIClient.shared
+    @State private var serverAddress: String = ""
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("Địa chỉ Backend Server hiện tại")) {
+                    #if os(iOS)
+                    TextField("https://upgrade-patches-spiritual-editing.trycloudflare.com", text: $serverAddress)
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                    #else
+                    TextField("https://upgrade-patches-spiritual-editing.trycloudflare.com", text: $serverAddress)
+                        .disableAutocorrection(true)
+                    #endif
+                }
+                
+                Section(header: Text("Chọn nhanh Server 24/7 Cloud (Bấm 1-Click)")) {
+                    Button(action: {
+                        serverAddress = "https://upgrade-patches-spiritual-editing.trycloudflare.com"
+                    }) {
+                        HStack {
+                            Image(systemName: "bolt.horizontal.circle.fill")
+                                .foregroundColor(.green)
+                            VStack(alignment: .leading) {
+                                Text("🌐 Server 24/7 Cloud (Khuyên dùng)")
+                                    .font(.subheadline.bold())
+                                Text("https://upgrade-patches-spiritual-editing.trycloudflare.com")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Cấu hình Backend")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Lưu") {
+                        if !serverAddress.isEmpty {
+                            apiClient.baseURL = serverAddress
+                        }
+                        dismiss()
+                    }
+                }
+            }
+            #else
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Lưu") {
+                        if !serverAddress.isEmpty {
+                            apiClient.baseURL = serverAddress
+                        }
+                        dismiss()
+                    }
+                }
+            }
+            #endif
+            .onAppear {
+                serverAddress = apiClient.baseURL
+            }
+        }
+    }
+}
