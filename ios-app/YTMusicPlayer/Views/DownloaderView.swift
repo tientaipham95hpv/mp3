@@ -11,7 +11,7 @@ struct DownloaderView: View {
     @State private var selectedMediaType: MediaType = .audio
     @State private var selectedQuality: String = "720p"
     @State private var showServerSettings: Bool = false
-    @State private var isGlowing: Bool = false
+    @State private var detectedClipboardURL: String? = nil
     
     @ObservedObject var downloadManager = DownloadManager.shared
     @ObservedObject var apiClient = APIClient.shared
@@ -66,7 +66,7 @@ struct DownloaderView: View {
                         }
                         
                         VStack(alignment: .leading, spacing: 1) {
-                            Text("YT MUSIC PRO")
+                            Text("YT MUSIC PRO MAX")
                                 .font(.system(size: 16, weight: .black, design: .rounded))
                                 .foregroundColor(.white)
                                 .tracking(1.0)
@@ -103,6 +103,45 @@ struct DownloaderView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {
                         
+                        // Smart Clipboard Banner Auto-Detect
+                        if let detectedURL = detectedClipboardURL {
+                            HStack(spacing: 12) {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(Color.yellow)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Phát hiện link YouTube vừa Copy!")
+                                        .font(.system(size: 13, weight: .bold))
+                                        .foregroundColor(.white)
+                                    Text(detectedURL)
+                                        .font(.system(size: 11))
+                                        .foregroundColor(Color.white.opacity(0.7))
+                                        .lineLimit(1)
+                                }
+                                
+                                Spacer()
+                                
+                                Button(action: {
+                                    youtubeURL = detectedURL
+                                    detectedClipboardURL = nil
+                                }) {
+                                    Text("Dán Ngay")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 7)
+                                        .background(primaryGradient)
+                                        .foregroundColor(.white)
+                                        .cornerRadius(10)
+                                }
+                            }
+                            .padding(14)
+                            .background(Color.purple.opacity(0.2))
+                            .cornerRadius(18)
+                            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.purple.opacity(0.5), lineWidth: 1))
+                            .padding(.horizontal, 20)
+                        }
+                        
                         // Hero Text
                         VStack(spacing: 6) {
                             Text("Tải Nhạc & Video Tốc Độ Cao")
@@ -115,7 +154,7 @@ struct DownloaderView: View {
                                 .foregroundColor(Color.white.opacity(0.6))
                                 .multilineTextAlignment(.center)
                         }
-                        .padding(.top, 8)
+                        .padding(.top, 4)
                         
                         // URL Input Glass Card
                         VStack(alignment: .leading, spacing: 12) {
@@ -375,16 +414,27 @@ struct DownloaderView: View {
                     .padding(.bottom, 160)
                 }
             }
+            .onAppear(perform: checkClipboardForYouTubeLink)
             .sheet(isPresented: $showServerSettings) {
                 ServerSettingsView()
             }
         }
     }
     
+    private func checkClipboardForYouTubeLink() {
+        #if canImport(UIKit)
+        if let clipboardString = UIPasteboard.general.string,
+           (clipboardString.contains("youtube.com") || clipboardString.contains("youtu.be")) {
+            detectedClipboardURL = clipboardString
+        }
+        #endif
+    }
+    
     private func pasteFromClipboard() {
         #if canImport(UIKit)
         if let clipboardString = UIPasteboard.general.string {
             youtubeURL = clipboardString
+            detectedClipboardURL = nil
         }
         #elseif canImport(AppKit)
         if let clipboardString = NSPasteboard.general.string(forType: .string) {
