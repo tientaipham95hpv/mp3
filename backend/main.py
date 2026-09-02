@@ -33,6 +33,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+CLIENT_LISTS = [
+    ['android'],
+    ['ios'],
+    ['tvhtml5'],
+    ['android_creator'],
+    ['web_embedded']
+]
+
 def clean_youtube_url(url: str) -> str:
     """
     Extracts video ID from any YouTube URL (watch, shorts, youtu.be, tracking params)
@@ -74,6 +82,35 @@ def extract_best_media_url(info) -> str:
         
     return None
 
+def extract_with_fallback(clean_url: str, target_format: str, is_pythonanywhere: bool) -> str:
+    """
+    Iterates through multiple YouTube client signatures to guarantee stream extraction on cloud servers.
+    """
+    last_error = None
+    for client in CLIENT_LISTS:
+        ydl_opts = {
+            'format': target_format,
+            'quiet': True,
+            'skip_download': True,
+            'cachedir': False,
+            'nocheckcertificate': True,
+            'extractor_args': {'youtube': {'player_client': client}},
+        }
+        if is_pythonanywhere:
+            ydl_opts['proxy'] = "http://proxy.server:3128"
+            
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(clean_url, download=False)
+                url = extract_best_media_url(info)
+                if url:
+                    return url
+        except Exception as e:
+            last_error = e
+            continue
+            
+    raise Exception(f"All extraction clients failed. Last error: {str(last_error)}")
+
 @app.get("/")
 def read_root():
     return {"message": "YouTube Media Extractor API is running!", "health": "/api/health"}
@@ -84,70 +121,58 @@ def health_check():
 
 @app.get("/api/info")
 def get_video_info(url: str = Query(..., description="YouTube Video URL")):
-    """
-    Extracts metadata from YouTube video URL without downloading.
-    Returns title, channel/artist, duration (seconds), thumbnail URL.
-    """
     if not url:
         raise HTTPException(status_code=400, detail="URL cannot be empty")
     
     clean_url = clean_youtube_url(url)
     
-    ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
-        'skip_download': True,
-        'cachedir': False,
-        'nocheckcertificate': True,
-        'extractor_args': {'youtube': {'player_client': ['android']}},
-    }
-    if is_pythonanywhere:
-        ydl_opts['proxy'] = "http://proxy.server:3128"
-    
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(clean_url, download=False)
-            duration = info.get('duration', 0)
-            
-            return {
-                "id": info.get('id', 'video'),
-                "title": info.get('title', 'YouTube Video'),
-                "artist": info.get('uploader') or info.get('artist') or "Unknown Artist",
-                "duration": duration,
-                "thumbnail": info.get('thumbnail'),
-                "webpage_url": info.get('webpage_url', clean_url),
-            }
-    except Exception:
-        # Fallback: YouTube Official oEmbed API (100% IP resilient)
+    for client in CLIENT_LISTS:
+        ydl_opts = {
+            'quiet': True,
+            'no_warnings': True,
+            'skip_download': True,
+            'cachedir': False,
+            'nocheckcertificate': True,
+            'extractor_args': {'youtube': {'player_client': client}},
+        }
+        if is_pythonanywhere:
+            ydl_opts['proxy'] = "http://proxy.server:3128"
+        
         try:
-            encoded_url = urllib.parse.quote(clean_url, safe='')
-            oembed_url = f"https://www.youtube.com/oembed?url={encoded_url}&format=json"
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(clean_url, download=False)
+                return {
+                    "id": info.get('id', 'video'),
+                    "title": info.get('title', 'YouTube Video'),
+                    "artist": info.get('uploader') or info.get('artist') or "Unknown Artist",
+                    "duration": info.get('duration', 0),
+                    "thumbnail": info.get('thumbnail'),
+                    "webpage_url": info.get('webpage_url', clean_url),
+                }
+        except Exception:
+            continue
             
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-            if is_pythonanywhere:
-                proxy_handler = urllib.request.ProxyHandler({'http': 'http://proxy.server:3128', 'https': 'http://proxy.server:3128'})
-                opener = urllib.request.build_opener(proxy_handler)
-                req = urllib.request.Request(oembed_url, headers=headers)
-                response = opener.open(req, timeout=5)
-            else:
-                req = urllib.request.Request(oembed_url, headers=headers)
-                response = urllib.request.urlopen(req, timeout=5)
-
-            data = json.loads(response.read().decode('utf-8'))
-            
-            vid_match = re.search(r'v=([0-9A-Za-z_-]{11})', clean_url)
-            video_id = vid_match.group(1) if vid_match else "unknown"
-            
-            return {
-                "id": video_id,
-                "title": data.get('title', 'YouTube Video'),
-                "artist": data.get('author_name', 'YouTube Artist'),
-                "duration": 0.0,
-                "thumbnail": data.get('thumbnail_url'),
-                "webpage_url": clean_url,
-            }
-        except Exception as e2:
-            raise HTTPException(status_code=400, detail=f"Error extracting video info: {str(e2)}")
+    # Fallback to oEmbed API
+    try:
+        encoded_url = urllib.parse.quote(clean_url, safe='')
+        oembed_url = f"https://www.youtube.com/oembed?url={encoded_url}&format=json"
+        
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        req = urllib.request.Request(oembed_url, headers=headers)
+        response = urllib.request.urlopen(req, timeout=5)
+        data = json.loads(response.read().decode('utf-8'))
+        
+        vid_match = re.search(r'v=([0-9A-Za-z_-]{11})', clean_url)
+        return {
+            "id": vid_match.group(1) if vid_match else "unknown",
+            "title": data.get('title', 'YouTube Video'),
+            "artist": data.get('author_name', 'YouTube Artist'),
+            "duration": 0.0,
+            "thumbnail": data.get('thumbnail_url'),
+            "webpage_url": clean_url,
+        }
+    except Exception as e2:
+        raise HTTPException(status_code=400, detail=f"Error extracting video info: {str(e2)}")
 
 @app.get("/api/download")
 def download_media(
@@ -155,38 +180,15 @@ def download_media(
     media_type: str = Query("mp3", pattern="^(mp3|mp4)$", description="Media format: mp3 or mp4"),
     quality: str = Query("720p", description="Video quality if mp4: 360p, 720p, 1080p")
 ):
-    """
-    Extracts direct YouTube media stream URL and redirects client (HTTP 302).
-    Allows iOS URLSession to download directly from YouTube CDN with zero serverless timeout.
-    """
     if not url:
         raise HTTPException(status_code=400, detail="URL is required")
 
     clean_url = clean_youtube_url(url)
     target_format = 'b/ba/best'
 
-    ydl_opts = {
-        'format': target_format,
-        'quiet': True,
-        'skip_download': True,
-        'cachedir': False,
-        'nocheckcertificate': True,
-        'extractor_args': {'youtube': {'player_client': ['android']}},
-    }
-    if is_pythonanywhere:
-        ydl_opts['proxy'] = "http://proxy.server:3128"
-
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(clean_url, download=False)
-            
-            direct_url = extract_best_media_url(info)
-
-            if not direct_url:
-                raise HTTPException(status_code=500, detail="Could not extract direct stream URL")
-
-            return RedirectResponse(url=direct_url, status_code=302)
-            
+        direct_url = extract_with_fallback(clean_url, target_format, is_pythonanywhere)
+        return RedirectResponse(url=direct_url, status_code=302)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Download extraction error: {str(e)}")
 
@@ -204,55 +206,6 @@ try:
     def flask_health():
         return jsonify({"status": "ok", "yt_dlp_version": yt_dlp.version.__version__})
 
-    @flask_app.route('/api/info')
-    def flask_info():
-        url = flask_request.args.get('url')
-        if not url:
-            return jsonify({"detail": "URL cannot be empty"}), 400
-        clean_url = clean_youtube_url(url)
-        ydl_opts = {
-            'quiet': True, 'no_warnings': True, 'skip_download': True, 'cachedir': False, 'nocheckcertificate': True,
-            'extractor_args': {'youtube': {'player_client': ['android']}}
-        }
-        if is_pythonanywhere:
-            ydl_opts['proxy'] = "http://proxy.server:3128"
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(clean_url, download=False)
-                return jsonify({
-                    "id": info.get('id', 'video'),
-                    "title": info.get('title', 'YouTube Video'),
-                    "artist": info.get('uploader') or info.get('artist') or "Unknown Artist",
-                    "duration": info.get('duration', 0),
-                    "thumbnail": info.get('thumbnail'),
-                    "webpage_url": info.get('webpage_url', clean_url)
-                })
-        except Exception:
-            try:
-                encoded_url = urllib.parse.quote(clean_url, safe='')
-                oembed_url = f"https://www.youtube.com/oembed?url={encoded_url}&format=json"
-                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-                if is_pythonanywhere:
-                    proxy_handler = urllib.request.ProxyHandler({'http': 'http://proxy.server:3128', 'https': 'http://proxy.server:3128'})
-                    opener = urllib.request.build_opener(proxy_handler)
-                    req = urllib.request.Request(oembed_url, headers=headers)
-                    response = opener.open(req, timeout=5)
-                else:
-                    req = urllib.request.Request(oembed_url, headers=headers)
-                    response = urllib.request.urlopen(req, timeout=5)
-                data = json.loads(response.read().decode('utf-8'))
-                vid_match = re.search(r'v=([0-9A-Za-z_-]{11})', clean_url)
-                return jsonify({
-                    "id": vid_match.group(1) if vid_match else "unknown",
-                    "title": data.get('title', 'YouTube Artist'),
-                    "artist": data.get('author_name', 'YouTube Artist'),
-                    "duration": 0.0,
-                    "thumbnail": data.get('thumbnail_url'),
-                    "webpage_url": clean_url
-                })
-            except Exception as e2:
-                return jsonify({"detail": f"Error: {str(e2)}"}), 400
-
     @flask_app.route('/api/download')
     def flask_download():
         url = flask_request.args.get('url')
@@ -261,19 +214,9 @@ try:
             return jsonify({"detail": "URL is required"}), 400
         clean_url = clean_youtube_url(url)
         target_format = 'b/ba/best'
-        ydl_opts = {
-            'format': target_format, 'quiet': True, 'skip_download': True, 'cachedir': False, 'nocheckcertificate': True,
-            'extractor_args': {'youtube': {'player_client': ['android']}}
-        }
-        if is_pythonanywhere:
-            ydl_opts['proxy'] = "http://proxy.server:3128"
         try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(clean_url, download=False)
-                direct_url = extract_best_media_url(info)
-                if not direct_url:
-                    return jsonify({"detail": "Could not extract direct stream URL"}), 500
-                return flask_redirect(direct_url, code=302)
+            direct_url = extract_with_fallback(clean_url, target_format, is_pythonanywhere)
+            return flask_redirect(direct_url, code=302)
         except Exception as e:
             return jsonify({"detail": f"Download extraction error: {str(e)}"}), 500
 except ImportError:
