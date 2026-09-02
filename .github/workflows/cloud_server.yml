@@ -28,7 +28,15 @@ jobs:
           sudo dpkg -i cloudflared.deb
 
       - name: Start Backend and Cloudflare Tunnel Online 24/7
+        env:
+          TUNNEL_TOKEN: ${{ secrets.TUNNEL_TOKEN }}
         run: |
           python backend/main.py &
           sleep 3
-          cloudflared tunnel --url http://localhost:8000
+          if [ -n "$TUNNEL_TOKEN" ]; then
+            echo "Starting Permanent Cloudflare Named Tunnel with static token..."
+            cloudflared tunnel --no-autoupdate run --token "$TUNNEL_TOKEN"
+          else
+            echo "Starting Quick Cloudflare Tunnel..."
+            cloudflared tunnel --url http://localhost:8000
+          fi
