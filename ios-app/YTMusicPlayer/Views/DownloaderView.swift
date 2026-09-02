@@ -295,7 +295,7 @@ struct DownloaderView: View {
                             )
                             .foregroundColor(youtubeURL.isEmpty ? Color.white.opacity(0.4) : .white)
                             .cornerRadius(20)
-                            .shadow(color: youtubeURL.isEmpty ? Color.purple.opacity(0.5), radius: 12, x: 0, y: 6)
+                            .shadow(color: youtubeURL.isEmpty ? Color.clear : Color.purple.opacity(0.5), radius: 12, x: 0, y: 6)
                         }
                         .disabled(youtubeURL.isEmpty)
                         .padding(.horizontal, 20)
