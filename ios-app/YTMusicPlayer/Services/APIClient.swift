@@ -20,7 +20,7 @@ public class APIClient: ObservableObject {
     }
     
     public init() {
-        self.baseURL = "https://mp3.cineviet.live"
+        self.baseURL = "https://ytmp3.cineviet.live"
         UserDefaults.standard.set(self.baseURL, forKey: "custom_backend_url")
     }
     

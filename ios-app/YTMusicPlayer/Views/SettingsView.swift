@@ -166,7 +166,7 @@ struct SettingsView: View {
                                     Text("Máy Chủ Backend Server Vĩnh Viễn")
                                         .font(.system(size: 15, weight: .bold))
                                         .foregroundColor(.white)
-                                    Text("Tên miền cố định https://mp3.cineviet.live")
+                                    Text("Tên miền cố định https://ytmp3.cineviet.live")
                                         .font(.system(size: 12))
                                         .foregroundColor(Color.white.opacity(0.6))
                                 }
@@ -177,12 +177,12 @@ struct SettingsView: View {
                                     .foregroundColor(Color.purple)
                                 
                                 #if os(iOS)
-                                TextField("https://mp3.cineviet.live", text: $serverAddress)
+                                TextField("https://ytmp3.cineviet.live", text: $serverAddress)
                                     .autocapitalization(.none)
                                     .disableAutocorrection(true)
                                     .foregroundColor(.white)
                                 #else
-                                TextField("https://mp3.cineviet.live", text: $serverAddress)
+                                TextField("https://ytmp3.cineviet.live", text: $serverAddress)
                                     .disableAutocorrection(true)
                                     .foregroundColor(.white)
                                 #endif
@@ -208,14 +208,14 @@ struct SettingsView: View {
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.1), lineWidth: 1))
                             
                             Button(action: {
-                                serverAddress = "https://mp3.cineviet.live"
+                                serverAddress = "https://ytmp3.cineviet.live"
                                 apiClient.baseURL = serverAddress
                                 showSavedAlert = true
                             }) {
                                 HStack {
                                     Image(systemName: "bolt.horizontal.circle.fill")
                                         .foregroundColor(.green)
-                                    Text("🌐 Khôi phục Server Cố Định Vĩnh Viễn (mp3.cineviet.live)")
+                                    Text("🌐 Khôi phục Server Cố Định Vĩnh Viễn (ytmp3.cineviet.live)")
                                         .font(.system(size: 13, weight: .semibold))
                                         .foregroundColor(.white)
                                     Spacer()

@@ -409,18 +409,18 @@ struct ServerSettingsView: View {
             Form {
                 Section(header: Text("Địa chỉ Backend Server vĩnh viễn")) {
                     #if os(iOS)
-                    TextField("https://mp3.cineviet.live", text: $serverAddress)
+                    TextField("https://ytmp3.cineviet.live", text: $serverAddress)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
                     #else
-                    TextField("https://mp3.cineviet.live", text: $serverAddress)
+                    TextField("https://ytmp3.cineviet.live", text: $serverAddress)
                         .disableAutocorrection(true)
                     #endif
                 }
                 
                 Section(header: Text("Chọn nhanh Server Vĩnh Viễn (Bấm 1-Click)")) {
                     Button(action: {
-                        serverAddress = "https://mp3.cineviet.live"
+                        serverAddress = "https://ytmp3.cineviet.live"
                     }) {
                         HStack {
                             Image(systemName: "bolt.horizontal.circle.fill")
@@ -428,7 +428,7 @@ struct ServerSettingsView: View {
                             VStack(alignment: .leading) {
                                 Text("🌐 Server Cố Định Vĩnh Viễn (Khuyên dùng)")
                                     .font(.subheadline.bold())
-                                Text("https://mp3.cineviet.live")
+                                Text("https://ytmp3.cineviet.live")
                                     .font(.caption)
                                     .foregroundColor(.gray)
                             }
