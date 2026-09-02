@@ -1,12 +1,6 @@
 import SwiftUI
 import AVKit
 
-#if canImport(UIKit)
-import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
-
 struct VideoPlayerView: View {
     @Environment(\.dismiss) var dismiss
     let videoURL: URL
@@ -17,26 +11,24 @@ struct VideoPlayerView: View {
             ZStack {
                 Color.black.ignoresSafeArea()
                 
-                NativeVideoPlayer(url: videoURL)
+                CustomVideoPlayer(url: videoURL)
                     .ignoresSafeArea()
             }
             .navigationTitle(title)
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "xmark")
-                            .foregroundColor(.white)
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Đóng") {
+                        dismiss()
                     }
                 }
             }
             #else
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "xmark")
-                            .foregroundColor(.white)
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Đóng") {
+                        dismiss()
                     }
                 }
             }
@@ -45,40 +37,27 @@ struct VideoPlayerView: View {
     }
 }
 
-#if canImport(UIKit)
-struct NativeVideoPlayer: UIViewControllerRepresentable {
+#if os(iOS)
+struct CustomVideoPlayer: UIViewControllerRepresentable {
     let url: URL
     
     func makeUIViewController(context: Context) -> AVPlayerViewController {
-        let player = AVPlayer(url: url)
         let controller = AVPlayerViewController()
+        let player = AVPlayer(url: url)
         controller.player = player
         controller.allowsPictureInPicturePlayback = true
         controller.canStartPictureInPictureAutomaticallyFromInline = true
-        controller.showsPlaybackControls = true
-        
-        // Auto play on launch
         player.play()
         return controller
     }
     
-    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {
-        // No update needed for basic player
-    }
+    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {}
 }
-#elseif canImport(AppKit)
-struct NativeVideoPlayer: NSViewRepresentable {
+#else
+struct CustomVideoPlayer: View {
     let url: URL
-    
-    func makeNSView(context: Context) -> AVPlayerView {
-        let player = AVPlayer(url: url)
-        let playerView = AVPlayerView()
-        playerView.player = player
-        playerView.controlsStyle = .inline
-        player.play()
-        return playerView
+    var body: some View {
+        VideoPlayer(player: AVPlayer(url: url))
     }
-    
-    func updateNSView(_ nsView: AVPlayerView, context: Context) {}
 }
 #endif

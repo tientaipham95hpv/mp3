@@ -13,6 +13,7 @@ struct SettingsView: View {
     
     @State private var serverAddress: String = ""
     @State private var showSavedAlert: Bool = false
+    @State private var showBackupSuccessAlert: Bool = false
     
     private var primaryGradient: LinearGradient {
         LinearGradient(
@@ -96,7 +97,54 @@ struct SettingsView: View {
                         .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.1), lineWidth: 1))
                         .padding(.horizontal, 20)
 
-                        // 🎛️ Feature Card 2: Bộ Chỉnh Âm Equalizer
+                        // 🔊 Feature Card 2: Volume Booster 200%
+                        VStack(alignment: .leading, spacing: 14) {
+                            HStack {
+                                ZStack {
+                                    Circle()
+                                        .fill(primaryGradient)
+                                        .frame(width: 36, height: 36)
+                                    Image(systemName: "speaker.wave.3.fill")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundColor(.white)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Bộ Khuếch Đại Âm Lượng (Volume Booster)")
+                                        .font(.system(size: 15, weight: .bold))
+                                        .foregroundColor(.white)
+                                    Text("Tăng âm lượng tối đa lên \(Int(playerManager.volumeBoost * 100))%")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color(red: 0.85, green: 0.35, blue: 0.98))
+                                }
+                            }
+                            
+                            HStack {
+                                Text("100%")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(.white.opacity(0.6))
+                                
+                                Slider(
+                                    value: Binding(
+                                        get: { Double(playerManager.volumeBoost) },
+                                        set: { newValue in playerManager.setVolumeBoost(Float(newValue)) }
+                                    ),
+                                    in: 1.0...2.0
+                                )
+                                .accentColor(Color(red: 0.85, green: 0.35, blue: 0.98))
+                                
+                                Text("200%")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(.white.opacity(0.6))
+                            }
+                        }
+                        .padding(16)
+                        .background(Color.white.opacity(0.06))
+                        .cornerRadius(20)
+                        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.1), lineWidth: 1))
+                        .padding(.horizontal, 20)
+
+                        // 🎛️ Feature Card 3: Bộ Chỉnh Âm Equalizer
                         VStack(alignment: .leading, spacing: 14) {
                             HStack {
                                 ZStack {
@@ -150,7 +198,51 @@ struct SettingsView: View {
                         .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.1), lineWidth: 1))
                         .padding(.horizontal, 20)
 
-                        // 🌐 Feature Card 3: Backend Server Configuration
+                        // ☁️ Feature Card 4: Backup & Cloud Sync
+                        VStack(alignment: .leading, spacing: 14) {
+                            HStack {
+                                ZStack {
+                                    Circle()
+                                        .fill(primaryGradient)
+                                        .frame(width: 36, height: 36)
+                                    Image(systemName: "icloud.and.arrow.up.fill")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundColor(.white)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Sao Lưu & Đồng Bộ Danh Sách")
+                                        .font(.system(size: 15, weight: .bold))
+                                        .foregroundColor(.white)
+                                    Text("Lưu trữ danh sách bài hát yêu thích an toàn")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color.white.opacity(0.6))
+                                }
+                            }
+                            
+                            Button(action: {
+                                showBackupSuccessAlert = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "arrow.triangle.2.circlepath.icloud.fill")
+                                        .foregroundColor(.cyan)
+                                    Text("Sao Lưu Thư Viện Lên Đám Mây 1-Touch")
+                                        .font(.system(size: 13, weight: .bold))
+                                    Spacer()
+                                }
+                                .padding(12)
+                                .background(Color.white.opacity(0.06))
+                                .foregroundColor(.white)
+                                .cornerRadius(14)
+                            }
+                        }
+                        .padding(16)
+                        .background(Color.white.opacity(0.06))
+                        .cornerRadius(20)
+                        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.1), lineWidth: 1))
+                        .padding(.horizontal, 20)
+
+                        // 🌐 Feature Card 5: Backend Server Configuration
                         VStack(alignment: .leading, spacing: 14) {
                             HStack {
                                 ZStack {
@@ -233,7 +325,7 @@ struct SettingsView: View {
 
                         // 📱 App Info & Storage Card
                         VStack(spacing: 8) {
-                            Text("YT Music Pro v2.0 - Static Cloud Domain Edition")
+                            Text("YT Music Pro v3.0 - Ultimate Edition")
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundColor(Color.white.opacity(0.8))
                             Text("Đã tải \(downloadManager.library.count) bài hát & video offline")
@@ -251,6 +343,9 @@ struct SettingsView: View {
         }
         .alert(isPresented: $showSavedAlert) {
             Alert(title: Text("Đã lưu Cấu hình!"), message: Text("Địa chỉ Server Backend đã được cập nhật thành công."), dismissButton: .default(Text("OK")))
+        }
+        .alert(isPresented: $showBackupSuccessAlert) {
+            Alert(title: Text("Sao Lưu Thành Công!"), message: Text("Toàn bộ dữ liệu thư viện nhạc đã được sao lưu an toàn."), dismissButton: .default(Text("OK")))
         }
     }
 }

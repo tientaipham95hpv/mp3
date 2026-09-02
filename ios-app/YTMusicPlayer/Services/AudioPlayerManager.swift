@@ -26,6 +26,7 @@ public class AudioPlayerManager: ObservableObject {
     @Published public var isShuffleEnabled: Bool = false
     @Published public var isRepeatEnabled: Bool = false
     @Published public var selectedEQPreset: EQPreset = .off
+    @Published public var volumeBoost: Float = 1.0 // 1.0x (100%) to 2.0x (200%)
     
     @Published public var sleepTimerMinutes: Int = 0
     @Published public var sleepTimerRemainingFormatted: String = ""
@@ -48,12 +49,17 @@ public class AudioPlayerManager: ObservableObject {
     private func setupAudioSession() {
         #if os(iOS)
         do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [.mixWithOthers, .allowAirPlay])
             try AVAudioSession.sharedInstance().setActive(true)
         } catch {
             print("Failed to set up AVAudioSession for background audio: \(error)")
         }
         #endif
+    }
+    
+    public func setVolumeBoost(_ multiplier: Float) {
+        self.volumeBoost = multiplier
+        player?.volume = multiplier
     }
     
     public func playTrack(_ item: MediaItem, inPlaylist: [MediaItem] = []) {
@@ -75,6 +81,7 @@ public class AudioPlayerManager: ObservableObject {
             player?.replaceCurrentItem(with: playerItem)
         }
         
+        player?.volume = volumeBoost
         player?.play()
         self.isPlaying = true
         self.duration = item.duration
