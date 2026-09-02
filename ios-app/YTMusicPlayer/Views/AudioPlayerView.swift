@@ -9,9 +9,11 @@ import AppKit
 struct AudioPlayerView: View {
     @Environment(\.dismiss) var dismiss
     @ObservedObject var playerManager = AudioPlayerManager.shared
+    @ObservedObject var downloadManager = DownloadManager.shared
     
     @State private var isDraggingSeekbar: Bool = false
     @State private var dragTime: Double = 0.0
+    @State private var showLyrics: Bool = false
     
     private var primaryGradient: LinearGradient {
         LinearGradient(
@@ -63,18 +65,17 @@ struct AudioPlayerView: View {
                     
                     Spacer()
                     
-                    if playerManager.sleepTimerMinutes > 0 {
-                        HStack(spacing: 4) {
-                            Image(systemName: "timer")
-                                .font(.system(size: 12))
-                            Text(playerManager.sleepTimerRemainingFormatted)
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    if let track = playerManager.currentTrack {
+                        Button(action: {
+                            downloadManager.toggleFavorite(track)
+                        }) {
+                            Image(systemName: isCurrentTrackFavorite ? "heart.fill" : "heart")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(isCurrentTrackFavorite ? Color.red : Color.white.opacity(0.8))
+                                .padding(12)
+                                .background(Color.white.opacity(0.08))
+                                .clipShape(Circle())
                         }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color.purple.opacity(0.2))
-                        .foregroundColor(.purple)
-                        .cornerRadius(12)
                     } else {
                         Spacer().frame(width: 44)
                     }
@@ -84,29 +85,54 @@ struct AudioPlayerView: View {
                 
                 Spacer()
                 
-                // Floating 3D Artwork Container
-                ZStack {
-                    RoundedRectangle(cornerRadius: 32)
-                        .fill(primaryGradient)
-                        .frame(width: 270, height: 270)
-                        .shadow(color: Color.purple.opacity(0.5), radius: 30, x: 0, y: 15)
-                        .scaleEffect(playerManager.isPlaying ? 1.0 : 0.92)
-                        .animation(.spring(response: 0.4, dampingFraction: 0.6), value: playerManager.isPlaying)
-                    
+                if showLyrics {
+                    // Lyrics View Container
                     VStack(spacing: 16) {
-                        Image(systemName: "music.note")
-                            .font(.system(size: 90, weight: .light))
-                            .foregroundColor(.white)
-                            .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+                        Text("KARAOKE & LỜI BÀI HÁT")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(Color.purple)
+                            .tracking(1.5)
                         
-                        // Dancing Equalizer Visualizer Bars
-                        if playerManager.isPlaying {
-                            HStack(spacing: 4) {
-                                ForEach(0..<5) { index in
-                                    RoundedRectangle(cornerRadius: 3)
-                                        .fill(Color.white.opacity(0.9))
-                                        .frame(width: 4, height: CGFloat([24, 40, 18, 32, 22][index]))
-                                        .animation(Animation.easeInOut(duration: 0.4).repeatForever(autoreverses: true).delay(Double(index) * 0.1), value: playerManager.isPlaying)
+                        ScrollView(showsIndicators: false) {
+                            Text("♪ ♫ Lời bài hát tự động đồng bộ ♫ ♪\n\nChúc bạn có những phút giây thưởng thức âm nhạc tuyệt vời nhất cùng YT Music Pro Pro Max Edition!")
+                                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                                .lineSpacing(8)
+                                .padding(.horizontal, 24)
+                        }
+                        .frame(height: 220)
+                    }
+                    .padding(20)
+                    .background(Color.white.opacity(0.06))
+                    .cornerRadius(28)
+                    .overlay(RoundedRectangle(cornerRadius: 28).stroke(Color.purple.opacity(0.4), lineWidth: 1))
+                    .padding(.horizontal, 24)
+                } else {
+                    // Floating 3D Artwork Container
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 32)
+                            .fill(primaryGradient)
+                            .frame(width: 270, height: 270)
+                            .shadow(color: Color.purple.opacity(0.5), radius: 30, x: 0, y: 15)
+                            .scaleEffect(playerManager.isPlaying ? 1.0 : 0.92)
+                            .animation(.spring(response: 0.4, dampingFraction: 0.6), value: playerManager.isPlaying)
+                        
+                        VStack(spacing: 16) {
+                            Image(systemName: "music.note")
+                                .font(.system(size: 90, weight: .light))
+                                .foregroundColor(.white)
+                                .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+                            
+                            // Dancing Equalizer Visualizer Bars
+                            if playerManager.isPlaying {
+                                HStack(spacing: 4) {
+                                    ForEach(0..<5) { index in
+                                        RoundedRectangle(cornerRadius: 3)
+                                            .fill(Color.white.opacity(0.9))
+                                            .frame(width: 4, height: CGFloat([24, 40, 18, 32, 22][index]))
+                                            .animation(Animation.easeInOut(duration: 0.4).repeatForever(autoreverses: true).delay(Double(index) * 0.1), value: playerManager.isPlaying)
+                                    }
                                 }
                             }
                         }
@@ -167,14 +193,30 @@ struct AudioPlayerView: View {
                 }
                 .padding(.horizontal, 28)
                 
-                // Extra Options Row (Shuffle / Repeat)
-                HStack(spacing: 48) {
+                // Extra Options Row (Shuffle / Lyrics / Repeat)
+                HStack(spacing: 44) {
                     Button(action: {
                         playerManager.isShuffleEnabled.toggle()
                     }) {
                         Image(systemName: "shuffle")
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(playerManager.isShuffleEnabled ? Color(red: 0.85, green: 0.35, blue: 0.98) : Color.white.opacity(0.4))
+                    }
+                    
+                    Button(action: {
+                        withAnimation { showLyrics.toggle() }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "quote.bubble.fill")
+                                .font(.system(size: 16))
+                            Text("Lời bài hát")
+                                .font(.system(size: 12, weight: .bold))
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(showLyrics ? AnyView(primaryGradient) : AnyView(Color.white.opacity(0.08)))
+                        .foregroundColor(.white)
+                        .cornerRadius(14)
                     }
                     
                     Button(action: {
@@ -220,6 +262,11 @@ struct AudioPlayerView: View {
                 Spacer()
             }
         }
+    }
+    
+    private var isCurrentTrackFavorite: Bool {
+        guard let track = playerManager.currentTrack else { return false }
+        return downloadManager.library.first(where: { $0.id == track.id })?.isFavorite ?? false
     }
     
     private func formatTime(_ seconds: Double) -> String {

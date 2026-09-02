@@ -129,7 +129,6 @@ public class DownloadManager: NSObject, ObservableObject, URLSessionDownloadDele
     }
     
     public func addMediaItem(_ item: MediaItem) {
-        // Remove duplicate if exists
         library.removeAll { $0.id == item.id && $0.mediaType == item.mediaType }
         library.insert(item, at: 0)
         saveLibrary()
@@ -141,6 +140,20 @@ public class DownloadManager: NSObject, ObservableObject, URLSessionDownloadDele
         }
         library.removeAll { $0.id == item.id }
         saveLibrary()
+    }
+    
+    public func toggleFavorite(_ item: MediaItem) {
+        if let index = library.firstIndex(where: { $0.id == item.id }) {
+            library[index].isFavorite.toggle()
+            saveLibrary()
+        }
+    }
+    
+    public func incrementPlayCount(_ item: MediaItem) {
+        if let index = library.firstIndex(where: { $0.id == item.id }) {
+            library[index].playCount += 1
+            saveLibrary()
+        }
     }
     
     private func saveLibrary() {

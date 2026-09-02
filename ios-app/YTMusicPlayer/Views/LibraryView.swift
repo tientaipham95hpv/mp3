@@ -6,11 +6,21 @@ import UIKit
 import AppKit
 #endif
 
+public enum LibraryFilter: String, CaseIterable, Identifiable {
+    case all = "Tất cả"
+    case audio = "🎵 MP3"
+    case video = "🎬 MP4"
+    case favorites = "❤️ Yêu thích"
+    case topPlayed = "🔥 Nghe Nhiều"
+    
+    public var id: String { rawValue }
+}
+
 struct LibraryView: View {
     @ObservedObject var downloadManager = DownloadManager.shared
     @ObservedObject var audioPlayerManager = AudioPlayerManager.shared
     
-    @State private var selectedSegment: MediaType = .audio
+    @State private var selectedFilter: LibraryFilter = .all
     @State private var searchText: String = ""
     @State private var selectedVideoItem: MediaItem? = nil
     @State private var showAudioPlayerModal: Bool = false
@@ -25,9 +35,22 @@ struct LibraryView: View {
     
     var filteredItems: [MediaItem] {
         downloadManager.library.filter { item in
-            let matchesType = item.mediaType == selectedSegment
+            let matchesFilter: Bool
+            switch selectedFilter {
+            case .all: matchesFilter = true
+            case .audio: matchesFilter = item.mediaType == .audio
+            case .video: matchesFilter = item.mediaType == .video
+            case .favorites: matchesFilter = item.isFavorite
+            case .topPlayed: matchesFilter = item.playCount > 0
+            }
+            
             let matchesSearch = searchText.isEmpty || item.title.localizedCaseInsensitiveContains(searchText) || item.artist.localizedCaseInsensitiveContains(searchText)
-            return matchesType && matchesSearch
+            return matchesFilter && matchesSearch
+        }.sorted {
+            if selectedFilter == .topPlayed {
+                return $0.playCount > $1.playCount
+            }
+            return $0.downloadedAt > $1.downloadedAt
         }
     }
     
@@ -36,10 +59,10 @@ struct LibraryView: View {
             // Full Screen Obsidian Background
             Color(red: 0.05, green: 0.04, blue: 0.09).ignoresSafeArea()
             
-            VStack(spacing: 16) {
+            VStack(spacing: 14) {
                 // Top Navigation Title Bar
                 HStack {
-                    Text("THƯ VIỆN OFFLINE")
+                    Text("THƯ VIỆN OFFLINE PRO")
                         .font(.system(size: 20, weight: .black, design: .rounded))
                         .foregroundColor(.white)
                         .tracking(1.0)
@@ -48,37 +71,28 @@ struct LibraryView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
                 
-                // Category Filter Pills
-                HStack(spacing: 12) {
-                    Button(action: { selectedSegment = .audio }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "music.note")
-                            Text("Âm thanh (\(audioCount))")
-                                .font(.system(size: 14, weight: .bold))
+                // Category Filter Pills Scrollable
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(LibraryFilter.allCases) { filter in
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    selectedFilter = filter
+                                }
+                            }) {
+                                Text(filter.rawValue)
+                                    .font(.system(size: 13, weight: .bold))
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 10)
+                                    .background(selectedFilter == filter ? AnyView(primaryGradient) : AnyView(Color.white.opacity(0.06)))
+                                    .foregroundColor(.white)
+                                    .cornerRadius(16)
+                                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(selectedFilter == filter ? Color.clear : Color.white.opacity(0.1), lineWidth: 1))
+                            }
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(selectedSegment == .audio ? AnyView(primaryGradient) : AnyView(Color.white.opacity(0.06)))
-                        .foregroundColor(.white)
-                        .cornerRadius(16)
-                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(selectedSegment == .audio ? Color.clear : Color.white.opacity(0.1), lineWidth: 1))
                     }
-                    
-                    Button(action: { selectedSegment = .video }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "film.fill")
-                            Text("Video (\(videoCount))")
-                                .font(.system(size: 14, weight: .bold))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(selectedSegment == .video ? AnyView(primaryGradient) : AnyView(Color.white.opacity(0.06)))
-                        .foregroundColor(.white)
-                        .cornerRadius(16)
-                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(selectedSegment == .video ? Color.clear : Color.white.opacity(0.1), lineWidth: 1))
-                    }
+                    .padding(.horizontal, 20)
                 }
-                .padding(.horizontal, 20)
                 
                 // Glassmorphic Search Bar
                 HStack(spacing: 10) {
@@ -110,7 +124,7 @@ struct LibraryView: View {
                             Circle()
                                 .fill(Color.white.opacity(0.05))
                                 .frame(width: 90, height: 90)
-                            Image(systemName: selectedSegment == .audio ? "music.note.house.fill" : "video.slash.fill")
+                            Image(systemName: "music.note.house.fill")
                                 .font(.system(size: 40))
                                 .foregroundColor(Color.white.opacity(0.4))
                         }
@@ -132,6 +146,7 @@ struct LibraryView: View {
                                     item: item,
                                     isPlaying: audioPlayerManager.currentTrack?.id == item.id && audioPlayerManager.isPlaying,
                                     onTap: { handleItemTap(item) },
+                                    onToggleFavorite: { downloadManager.toggleFavorite(item) },
                                     onDelete: { downloadManager.deleteMediaItem(item) }
                                 )
                             }
@@ -152,22 +167,21 @@ struct LibraryView: View {
         }
     }
     
-    private var audioCount: Int {
-        downloadManager.library.filter { $0.mediaType == .audio }.count
-    }
-    
-    private var videoCount: Int {
-        downloadManager.library.filter { $0.mediaType == .video }.count
-    }
-    
     private var emptyStateText: String {
         if !searchText.isEmpty {
-            return "Không tìm thấy bài hát nào"
+            return "Không tìm thấy kết quả nào"
         }
-        return selectedSegment == .audio ? "Chưa có bài hát MP3 nào" : "Chưa có video MP4 nào"
+        switch selectedFilter {
+        case .all: return "Chưa có bài hát hoặc video nào"
+        case .audio: return "Chưa có bài hát MP3 nào"
+        case .video: return "Chưa có video MP4 nào"
+        case .favorites: return "Chưa có bài hát Yêu thích nào"
+        case .topPlayed: return "Chưa có lịch sử phát nhạc"
+        }
     }
     
     private func handleItemTap(_ item: MediaItem) {
+        downloadManager.incrementPlayCount(item)
         if item.mediaType == .audio {
             let audioPlaylist = downloadManager.library.filter { $0.mediaType == .audio }
             audioPlayerManager.playTrack(item, inPlaylist: audioPlaylist)
@@ -182,6 +196,7 @@ struct MediaCardRowView: View {
     let item: MediaItem
     let isPlaying: Bool
     let onTap: () -> Void
+    let onToggleFavorite: () -> Void
     let onDelete: () -> Void
     
     private var primaryGradient: LinearGradient {
@@ -242,12 +257,20 @@ struct MediaCardRowView: View {
                 
                 Spacer()
                 
+                // Favorite Heart Button
+                Button(action: onToggleFavorite) {
+                    Image(systemName: item.isFavorite ? "heart.fill" : "heart")
+                        .font(.system(size: 18))
+                        .foregroundColor(item.isFavorite ? Color.red : Color.white.opacity(0.4))
+                        .padding(6)
+                }
+                
                 // Play Action Circle Button
                 Button(action: onTap) {
                     ZStack {
                         Circle()
                             .fill(isPlaying ? primaryGradient : LinearGradient(colors: [Color.white.opacity(0.15)], startPoint: .leading, endPoint: .trailing))
-                            .frame(width: 38, height: 38)
+                            .frame(width: 36, height: 36)
                         
                         Image(systemName: isPlaying ? "pause.fill" : "play.fill")
                             .font(.system(size: 14, weight: .bold))

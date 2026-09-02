@@ -22,6 +22,8 @@ public struct MediaItem: Identifiable, Codable, Hashable {
     public var thumbnailURL: String?
     public var downloadedAt: Date
     public var isFavorite: Bool
+    public var playCount: Int
+    public var lyrics: String?
     
     public init(
         id: String = UUID().uuidString,
@@ -32,7 +34,9 @@ public struct MediaItem: Identifiable, Codable, Hashable {
         localFileName: String,
         thumbnailURL: String? = nil,
         downloadedAt: Date = Date(),
-        isFavorite: Bool = false
+        isFavorite: Bool = false,
+        playCount: Int = 0,
+        lyrics: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -43,6 +47,8 @@ public struct MediaItem: Identifiable, Codable, Hashable {
         self.thumbnailURL = thumbnailURL
         self.downloadedAt = downloadedAt
         self.isFavorite = isFavorite
+        self.playCount = playCount
+        self.lyrics = lyrics
     }
     
     public var localURL: URL? {
