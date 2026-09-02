@@ -163,10 +163,10 @@ struct SettingsView: View {
                                 }
                                 
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("Máy Chủ Backend Server")
+                                    Text("Máy Chủ Backend Server Vĩnh Viễn")
                                         .font(.system(size: 15, weight: .bold))
                                         .foregroundColor(.white)
-                                    Text("Cấu hình kết nối 24/7 Cloud hoặc IP cá nhân")
+                                    Text("Tên miền cố định https://mp3.cineviet.live")
                                         .font(.system(size: 12))
                                         .foregroundColor(Color.white.opacity(0.6))
                                 }
@@ -177,12 +177,12 @@ struct SettingsView: View {
                                     .foregroundColor(Color.purple)
                                 
                                 #if os(iOS)
-                                TextField("https://...", text: $serverAddress)
+                                TextField("https://mp3.cineviet.live", text: $serverAddress)
                                     .autocapitalization(.none)
                                     .disableAutocorrection(true)
                                     .foregroundColor(.white)
                                 #else
-                                TextField("https://...", text: $serverAddress)
+                                TextField("https://mp3.cineviet.live", text: $serverAddress)
                                     .disableAutocorrection(true)
                                     .foregroundColor(.white)
                                 #endif
@@ -208,14 +208,14 @@ struct SettingsView: View {
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.1), lineWidth: 1))
                             
                             Button(action: {
-                                serverAddress = "https://males-enhancement-revenue-teens.trycloudflare.com"
+                                serverAddress = "https://mp3.cineviet.live"
                                 apiClient.baseURL = serverAddress
                                 showSavedAlert = true
                             }) {
                                 HStack {
                                     Image(systemName: "bolt.horizontal.circle.fill")
                                         .foregroundColor(.green)
-                                    Text("🌐 Khôi phục Server Cloud 24/7 Mặc định")
+                                    Text("🌐 Khôi phục Server Cố Định Vĩnh Viễn (mp3.cineviet.live)")
                                         .font(.system(size: 13, weight: .semibold))
                                         .foregroundColor(.white)
                                     Spacer()
@@ -233,7 +233,7 @@ struct SettingsView: View {
 
                         // 📱 App Info & Storage Card
                         VStack(spacing: 8) {
-                            Text("YT Music Pro v2.0 - Premium Edition")
+                            Text("YT Music Pro v2.0 - Static Cloud Domain Edition")
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundColor(Color.white.opacity(0.8))
                             Text("Đã tải \(downloadManager.library.count) bài hát & video offline")

@@ -295,7 +295,7 @@ struct DownloaderView: View {
                             )
                             .foregroundColor(youtubeURL.isEmpty ? Color.white.opacity(0.4) : .white)
                             .cornerRadius(20)
-                            .shadow(color: youtubeURL.isEmpty ? Color.clear : Color.purple.opacity(0.5), radius: 12, x: 0, y: 6)
+                            .shadow(color: youtubeURL.isEmpty ? Color.purple.opacity(0.5), radius: 12, x: 0, y: 6)
                         }
                         .disabled(youtubeURL.isEmpty)
                         .padding(.horizontal, 20)
@@ -407,28 +407,28 @@ struct ServerSettingsView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Địa chỉ Backend Server hiện tại")) {
+                Section(header: Text("Địa chỉ Backend Server vĩnh viễn")) {
                     #if os(iOS)
-                    TextField("https://males-enhancement-revenue-teens.trycloudflare.com", text: $serverAddress)
+                    TextField("https://mp3.cineviet.live", text: $serverAddress)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
                     #else
-                    TextField("https://males-enhancement-revenue-teens.trycloudflare.com", text: $serverAddress)
+                    TextField("https://mp3.cineviet.live", text: $serverAddress)
                         .disableAutocorrection(true)
                     #endif
                 }
                 
-                Section(header: Text("Chọn nhanh Server 24/7 Cloud (Bấm 1-Click)")) {
+                Section(header: Text("Chọn nhanh Server Vĩnh Viễn (Bấm 1-Click)")) {
                     Button(action: {
-                        serverAddress = "https://males-enhancement-revenue-teens.trycloudflare.com"
+                        serverAddress = "https://mp3.cineviet.live"
                     }) {
                         HStack {
                             Image(systemName: "bolt.horizontal.circle.fill")
                                 .foregroundColor(.green)
                             VStack(alignment: .leading) {
-                                Text("🌐 Server 24/7 Cloud (Khuyên dùng)")
+                                Text("🌐 Server Cố Định Vĩnh Viễn (Khuyên dùng)")
                                     .font(.subheadline.bold())
-                                Text("https://males-enhancement-revenue-teens.trycloudflare.com")
+                                Text("https://mp3.cineviet.live")
                                     .font(.caption)
                                     .foregroundColor(.gray)
                             }

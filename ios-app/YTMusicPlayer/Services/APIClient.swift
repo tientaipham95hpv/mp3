@@ -12,7 +12,7 @@ public struct YouTubeVideoInfo: Codable {
 public class APIClient: ObservableObject {
     public static let shared = APIClient()
     
-    // Active 100% Verified Stream Extraction Cloudflare Tunnel URL
+    // Permanent Static Cloudflare Named Tunnel Domain
     @Published public var baseURL: String {
         didSet {
             UserDefaults.standard.set(baseURL, forKey: "custom_backend_url")
@@ -20,7 +20,7 @@ public class APIClient: ObservableObject {
     }
     
     public init() {
-        self.baseURL = "https://males-enhancement-revenue-teens.trycloudflare.com"
+        self.baseURL = "https://mp3.cineviet.live"
         UserDefaults.standard.set(self.baseURL, forKey: "custom_backend_url")
     }
     
