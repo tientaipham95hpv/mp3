@@ -15,7 +15,7 @@ struct AudioPlayerView: View {
     
     private var primaryGradient: LinearGradient {
         LinearGradient(
-            colors: [Color(red: 0.65, green: 0.25, blue: 0.98), Color(red: 0.95, green: 0.20, blue: 0.55)],
+            colors: [Color(red: 0.68, green: 0.22, blue: 0.98), Color(red: 0.98, green: 0.18, blue: 0.52)],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
@@ -24,7 +24,7 @@ struct AudioPlayerView: View {
     var body: some View {
         ZStack {
             // Dark Atmospheric Backdrop
-            Color(red: 0.05, green: 0.05, blue: 0.08).ignoresSafeArea()
+            Color(red: 0.05, green: 0.04, blue: 0.09).ignoresSafeArea()
             
             // Blurred Artwork Ambient Glow
             VStack {
@@ -35,15 +35,15 @@ struct AudioPlayerView: View {
                     .offset(y: -40)
             }
             
-            VStack(spacing: 20) {
-                // Top Grab Bar & Dismiss Button
+            VStack(spacing: 18) {
+                // Top Dismiss Bar
                 HStack {
                     Button(action: { dismiss() }) {
                         Image(systemName: "chevron.down")
-                            .font(.system(size: 20, weight: .bold))
+                            .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.white.opacity(0.8))
                             .padding(12)
-                            .background(Color.white.opacity(0.1))
+                            .background(Color.white.opacity(0.08))
                             .clipShape(Circle())
                     }
                     
@@ -63,13 +63,20 @@ struct AudioPlayerView: View {
                     
                     Spacer()
                     
-                    Button(action: {}) {
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.white.opacity(0.8))
-                            .padding(12)
-                            .background(Color.white.opacity(0.1))
-                            .clipShape(Circle())
+                    if playerManager.sleepTimerMinutes > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "timer")
+                                .font(.system(size: 12))
+                            Text(playerManager.sleepTimerRemainingFormatted)
+                                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.purple.opacity(0.2))
+                        .foregroundColor(.purple)
+                        .cornerRadius(12)
+                    } else {
+                        Spacer().frame(width: 44)
                     }
                 }
                 .padding(.horizontal, 24)
@@ -79,17 +86,31 @@ struct AudioPlayerView: View {
                 
                 // Floating 3D Artwork Container
                 ZStack {
-                    RoundedRectangle(cornerRadius: 28)
+                    RoundedRectangle(cornerRadius: 32)
                         .fill(primaryGradient)
-                        .frame(width: 280, height: 280)
+                        .frame(width: 270, height: 270)
                         .shadow(color: Color.purple.opacity(0.5), radius: 30, x: 0, y: 15)
-                        .scaleEffect(playerManager.isPlaying ? 1.0 : 0.9)
+                        .scaleEffect(playerManager.isPlaying ? 1.0 : 0.92)
                         .animation(.spring(response: 0.4, dampingFraction: 0.6), value: playerManager.isPlaying)
                     
-                    Image(systemName: "music.note")
-                        .font(.system(size: 96, weight: .light))
-                        .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+                    VStack(spacing: 16) {
+                        Image(systemName: "music.note")
+                            .font(.system(size: 90, weight: .light))
+                            .foregroundColor(.white)
+                            .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+                        
+                        // Dancing Equalizer Visualizer Bars
+                        if playerManager.isPlaying {
+                            HStack(spacing: 4) {
+                                ForEach(0..<5) { index in
+                                    RoundedRectangle(cornerRadius: 3)
+                                        .fill(Color.white.opacity(0.9))
+                                        .frame(width: 4, height: CGFloat([24, 40, 18, 32, 22][index]))
+                                        .animation(Animation.easeInOut(duration: 0.4).repeatForever(autoreverses: true).delay(Double(index) * 0.1), value: playerManager.isPlaying)
+                                }
+                            }
+                        }
+                    }
                 }
                 
                 Spacer()
@@ -106,7 +127,7 @@ struct AudioPlayerView: View {
                         
                         Text(track.artist)
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(Color(red: 0.75, green: 0.35, blue: 0.98))
+                            .foregroundColor(Color(red: 0.85, green: 0.35, blue: 0.98))
                     } else {
                         Text("Chưa chọn bài hát")
                             .font(.title3.bold())
@@ -132,7 +153,7 @@ struct AudioPlayerView: View {
                             }
                         }
                     )
-                    .accentColor(Color(red: 0.75, green: 0.35, blue: 0.98))
+                    .accentColor(Color(red: 0.85, green: 0.35, blue: 0.98))
                     
                     HStack {
                         Text(formatTime(isDraggingSeekbar ? dragTime : playerManager.currentTime))
@@ -145,6 +166,26 @@ struct AudioPlayerView: View {
                     }
                 }
                 .padding(.horizontal, 28)
+                
+                // Extra Options Row (Shuffle / Repeat)
+                HStack(spacing: 48) {
+                    Button(action: {
+                        playerManager.isShuffleEnabled.toggle()
+                    }) {
+                        Image(systemName: "shuffle")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(playerManager.isShuffleEnabled ? Color(red: 0.85, green: 0.35, blue: 0.98) : Color.white.opacity(0.4))
+                    }
+                    
+                    Button(action: {
+                        playerManager.isRepeatEnabled.toggle()
+                    }) {
+                        Image(systemName: "repeat")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(playerManager.isRepeatEnabled ? Color(red: 0.85, green: 0.35, blue: 0.98) : Color.white.opacity(0.4))
+                    }
+                }
+                .padding(.top, 4)
                 
                 // Modern Controller Bar
                 HStack(spacing: 36) {
@@ -174,7 +215,7 @@ struct AudioPlayerView: View {
                             .foregroundColor(.white)
                     }
                 }
-                .padding(.vertical, 16)
+                .padding(.vertical, 14)
                 
                 Spacer()
             }

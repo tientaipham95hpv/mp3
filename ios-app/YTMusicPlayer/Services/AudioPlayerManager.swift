@@ -3,6 +3,17 @@ import AVFoundation
 import MediaPlayer
 import Combine
 
+public enum EQPreset: String, CaseIterable, Identifiable {
+    case off = "Tắt EQ"
+    case bassBoost = "Tăng Bass"
+    case vocalBoost = "Tăng Giọng Hát"
+    case pop = "Nhạc Pop"
+    case rock = "Nhạc Rock"
+    case chill = "Nhạc Chill / Đêm"
+    
+    public var id: String { rawValue }
+}
+
 public class AudioPlayerManager: ObservableObject {
     public static let shared = AudioPlayerManager()
     
@@ -11,6 +22,15 @@ public class AudioPlayerManager: ObservableObject {
     @Published public var currentTime: Double = 0.0
     @Published public var duration: Double = 0.0
     @Published public var playlist: [MediaItem] = []
+    
+    @Published public var isShuffleEnabled: Bool = false
+    @Published public var isRepeatEnabled: Bool = false
+    @Published public var selectedEQPreset: EQPreset = .off
+    
+    @Published public var sleepTimerMinutes: Int = 0
+    @Published public var sleepTimerRemainingFormatted: String = ""
+    private var sleepTimer: Timer?
+    private var sleepTimerTargetDate: Date?
     
     public var progress: Double {
         guard duration > 0 else { return 0.0 }
@@ -83,17 +103,68 @@ public class AudioPlayerManager: ObservableObject {
     }
     
     public func playNext() {
-        guard let current = currentTrack,
-              let currentIndex = playlist.firstIndex(where: { $0.id == current.id }),
-              currentIndex + 1 < playlist.count else { return }
-        playTrack(playlist[currentIndex + 1])
+        guard let current = currentTrack, !playlist.isEmpty else { return }
+        
+        if isRepeatEnabled {
+            seek(to: 0)
+            player?.play()
+            isPlaying = true
+            return
+        }
+        
+        if isShuffleEnabled {
+            let randomIndex = Int.random(in: 0..<playlist.count)
+            playTrack(playlist[randomIndex])
+            return
+        }
+        
+        if let currentIndex = playlist.firstIndex(where: { $0.id == current.id }),
+           currentIndex + 1 < playlist.count {
+            playTrack(playlist[currentIndex + 1])
+        } else {
+            // Loop back to start
+            if let first = playlist.first {
+                playTrack(first)
+            }
+        }
     }
     
     public func playPrevious() {
-        guard let current = currentTrack,
-              let currentIndex = playlist.firstIndex(where: { $0.id == current.id }),
-              currentIndex - 1 >= 0 else { return }
-        playTrack(playlist[currentIndex - 1])
+        guard let current = currentTrack, !playlist.isEmpty else { return }
+        if let currentIndex = playlist.firstIndex(where: { $0.id == current.id }),
+           currentIndex - 1 >= 0 {
+            playTrack(playlist[currentIndex - 1])
+        }
+    }
+    
+    // MARK: - Sleep Timer Feature
+    public func setSleepTimer(minutes: Int) {
+        self.sleepTimerMinutes = minutes
+        sleepTimer?.invalidate()
+        
+        if minutes == 0 {
+            sleepTimerRemainingFormatted = ""
+            sleepTimerTargetDate = nil
+            return
+        }
+        
+        let target = Date().addingTimeInterval(TimeInterval(minutes * 60))
+        self.sleepTimerTargetDate = target
+        
+        sleepTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self = self, let targetDate = self.sleepTimerTargetDate else { return }
+            let remaining = targetDate.timeIntervalSinceNow
+            
+            if remaining <= 0 {
+                self.player?.pause()
+                self.isPlaying = false
+                self.setSleepTimer(minutes: 0)
+            } else {
+                let mins = Int(remaining) / 60
+                let secs = Int(remaining) % 60
+                self.sleepTimerRemainingFormatted = String(format: "%02d:%02d", mins, secs)
+            }
+        }
     }
     
     private func addTimeObserver() {
